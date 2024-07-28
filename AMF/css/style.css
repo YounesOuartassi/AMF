@@ -9629,6 +9629,10 @@ textarea.form-control {
   .block-23 ul li .icon, .block-23 ul li .text {
     display: table-cell;
     vertical-align: top; }
+.block-23 ul li .icon, .block-23 ul li .email-text {
+  display: table-cell;
+  vertical-align: top;
+  padding-left: 10px }
   .block-23 ul li .icon {
     width: 40px;
     font-size: 18px;
