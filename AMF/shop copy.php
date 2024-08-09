@@ -25,6 +25,47 @@
     <link rel="stylesheet" href="css/style.css">
 
     <script>
+			// Sample products data, this can be dynamically generated from the server
+			const products = [
+				{ id: 1, name: "Poivron", category: "legumes" },
+				{ id: 2, name: "Fraise", category: "fruits" },
+				{ id: 3, name: "Poireau", category: "jus" },
+				{ id: 4, name: "Dried Mango", category: "seche" },
+				// Add more products here
+			];
+			
+			// Function to render products based on category
+			function renderProducts(category) {
+				const container = document.getElementById("products-container");
+				container.innerHTML = ""; // Clear existing products
+			
+				const filteredProducts = category === "all" ? products : products.filter(product => product.category === category);
+			
+				filteredProducts.forEach(product => {
+					const productDiv = document.createElement("div");
+					productDiv.className = "col-md-4";
+					productDiv.innerHTML = `
+						<div class="product">
+							<h2>${product.name}</h2>
+							<p>Category: ${product.category}</p>
+						</div>
+					`;
+					container.appendChild(productDiv);
+				});
+			}
+			
+			// Function to get URL parameter
+			function getUrlParameter(name) {
+				name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+				const regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+				const results = regex.exec(location.search);
+				return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+			}
+			
+			// Get category from URL and render products
+			const category = getUrlParameter('category') || 'all';
+			renderProducts(category);
+			
         // Function to change the price of a food item
         function changePrice(foodId, newPrice) {
             fetch(`http://localhost:3000/api/foods/€{foodId}`, {
@@ -97,11 +138,11 @@
             <div class="row justify-content-center">
                 <div class="col-md-10 mb-5 text-center">
                     <ul class="product-category">
-                        <li><a href="#" class="active">Tous</a></li>
-                        <li><a href="#">Légumes</a></li>
-                        <li><a href="#">Fruits</a></li>
-                        <li><a href="#">Jus</a></li>
-                        <li><a href="#">Séché</a></li>
+                        <li><a href="shop.html?category=all" class="active">Tous</a></li>
+						<li><a href="shop.html?category=legumes">Légumes</a></li>
+						<li><a href="shop.html?category=fruits">Fruits</a></li>
+						<li><a href="shop.html?category=jus">Jus</a></li>
+						<li><a href="shop.html?category=seche">Séché</a></li>
                     </ul>
                 </div>
             </div>
@@ -119,10 +160,10 @@
 									<p class="price"><span class="mr-2 price-dc">€120.00</span><span class="price-sale" id="price-1">€80.00</span></p>
 								</div>
 							</div>
-							<div class="bottom-area d-flex px-3">
-								<div class="m-auto d-flex">
-									<a href="#" class="add-to-cart d-flex justify-content-center align-items-center text-center">
-										<span><i class="ion-ios-menu"></i></span>
+								<a href="#" class="add-to-cart d-flex justify-content-center align-items-center text-center">
+									<div class="bottom-area d-flex px-3">
+									<div class="m-auto d-flex">
+									<span><i class="ion-ios-menu"></i></span>
 									</a>
 									<a href="#" class="buy-now d-flex justify-content-center align-items-center mx-1">
 										<span><i class="ion-ios-cart"></i></span>
@@ -343,7 +384,7 @@
     						<div class="overlay"></div>
     					</a>
     					<div class="text py-3 pb-4 px-3 text-center">
-    						<h3><a href="#">Onion</a></h3>
+    						<h3><a href="#">oignon</a></h3>
     						<div class="d-flex">
     							<div class="pricing">
 		    						<p class="price"><span class="mr-2 price-dc">€120.00</span></p>
@@ -371,7 +412,7 @@
     						<div class="overlay"></div>
     					</a>
     					<div class="text py-3 pb-4 px-3 text-center">
-    						<h3><a href="#">Apple</a></h3>
+    						<h3><a href="#">Pomme</a></h3>
     						<div class="d-flex">
     							<div class="pricing">
 		    						<p class="price"><span>€120.00</span></p>
@@ -399,7 +440,7 @@
 	    					<div class="overlay"></div>
 	    				</a>
     					<div class="text py-3 pb-4 px-3 text-center">
-    						<h3><a href="#">Garlic</a></h3>
+    						<h3><a href="#">ail</a></h3>
     						<div class="d-flex">
     							<div class="pricing">
 		    						<p class="price"><span>€120.00</span></p>
@@ -427,7 +468,7 @@
     						<div class="overlay"></div>
     					</a>
     					<div class="text py-3 pb-4 px-3 text-center">
-    						<h3><a href="#">Chilli</a></h3>
+    						<h3><a href="#">Chili</a></h3>
     						<div class="d-flex">
     							<div class="pricing">
 		    						<p class="price"><span>€120.00</span></p>
