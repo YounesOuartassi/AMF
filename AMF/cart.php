@@ -1,3 +1,57 @@
+<?php
+// Include your database connection
+include('db_connect.php');
+
+// Start session to store messages
+session_start();
+
+// Check if the form is submitted
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Get form data
+    $product_id = intval($_POST['product_id']);
+    $quantity = intval($_POST['quantity']);
+    $unit = htmlspecialchars($_POST['unit']);
+
+    // Check if the product exists in the database
+    $query = "SELECT * FROM product WHERE product_id = $product_id";
+    $result = mysqli_query($conn, $query);
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        // Product exists
+        $product = mysqli_fetch_assoc($result);
+
+        // Calculate the order total (This is a simplified version, assuming one item per order)
+        $total_amount = $product['price_per_unit'] * $quantity;
+
+        // Insert a new order in the `orders` table (You may need to add more details depending on your requirements)
+        $insert_order_query = "INSERT INTO orders (full_name, email, total_amount) VALUES ('', '', $total_amount)";
+        mysqli_query($conn, $insert_order_query);
+        
+        // Get the last inserted order_id
+        $order_id = mysqli_insert_id($conn);
+
+        // Insert the order item into the `order_items` table
+        $insert_order_item_query = "INSERT INTO order_items (order_id, product_id, quantity, unit) VALUES ($order_id, $product_id, $quantity, '$unit')";
+        mysqli_query($conn, $insert_order_item_query);
+
+        // Set a session message
+        $_SESSION['message'] = "Votre article a été ajouté au panier";
+
+        // Redirect back to the shop page
+        header("Location: shop.php");
+        exit;
+    } else {
+        echo "Product not found.";
+        exit;
+    }
+}
+
+// Display the cart items
+$query = "SELECT * FROM order_items oi JOIN product p ON oi.product_id = p.product_id WHERE oi.order_id IN (SELECT MAX(order_id) FROM orders)";
+$result = mysqli_query($conn, $query);
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -38,7 +92,7 @@
 				<div class="collapse navbar-collapse" id="ftco-nav">
 					<ul class="navbar-nav ml-auto">
 					<li class="nav-item active"><a href="index.html" class="nav-link">Acceuil</a></li>
-					<li class="nav-item"><a href="shop.html" class="nav-link">Acheter</a></li>
+					<li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
 					<!-- <li class="nav-item dropdown">
 					<a class="nav-link dropdown-toggle" href="#" id="dropdown04" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Acheter</a>
 					<div class="dropdown-menu" aria-labelledby="dropdown04">
@@ -51,7 +105,7 @@
 					</li> -->
 					<li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
 					<li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
-					<li class="nav-item cta cta-colored"><a href="cart.html" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
+					<li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
 
 					</ul>
 	      </div>
@@ -70,65 +124,106 @@
     </div>
 
     <section class="ftco-section ftco-cart">
-			<div class="container">
-				<div class="row">
-    			<div class="col-md-12 ftco-animate">
-    				<div class="cart-list">
-	    				<table class="table">
-						    <thead class="thead-primary">
-						      <tr class="text-center">
-						        <th>&nbsp;</th>
-						        <th>&nbsp;</th>
-						        <th>nom du produit</th>
-						        <th>Prix</th>
-						        <th>Quantité</th>
-						        <th>Total</th>
-						      </tr>
-						    </thead>
-						    <tbody>
-						      <tr class="text-center">
-						        <td class="product-remove"><a href="#"><span class="ion-ios-close"></span></a></td>
-						        
-						        <td class="image-prod"><div class="img" style="background-image:url(images/product-3.jpg);"></div></td>
-						        
-						        <td class="product-name">
-						        	<h3>pro 1</h3>
-						        </td>
-						        
-						        <td class="price">€4.90</td>
-						        
-						        <td class="quantity">
-						        	<div class="input-group mb-3">
-					             	<input type="text" name="quantity" class="quantity form-control input-number" value="1" min="1" max="100">
-					          	</div>
-					          </td>
-						        
-						        <td class="total">€4.90</td>
-						      </tr><!-- END TR-->
+	<div class="container">
+        <div class="row">
+            <div class="col-md-12 ftco-animate">
+                <div class="cart-list">
+                    <table class="table">
+                        <thead class="thead-primary">
+                            <tr class="text-center">
+                                <th>&nbsp;</th>
+                                <th>&nbsp;</th>
+                                <th>Nom du produit</th>
+                                <th>Prix</th>
+                                <th>Quantité</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                                <tr class="text-center">
+                                    <td class="product-remove"><a href="#"><span class="ion-ios-close"></span></a></td>
+                                    
+                                    <td class="image-">
+                                        <div class="img" style="background-image:url(<?= htmlspecialchars($row['image_url']); ?>);"></div>
+                                    </td>
+                                    
+                                    <td class="product-name">
+                                        <h3><?= htmlspecialchars($row['name']); ?></h3>
+                                    </td>
+                                    
+                                    <td class="price">€<?= htmlspecialchars($row['price_per_unit']); ?></td>
+                                    
+                                    <td class="quantity">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="quantity" class="quantity form-control input-number" value="<?= htmlspecialchars($row['quantity']); ?>" min="1" max="100" readonly>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="total">€<?= htmlspecialchars($row['price_per_unit'] * $row['quantity']); ?></td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Shipping Information -->
+            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
+                <div class="cart-total mb-3">
+                    <h3>Livraison</h3>
+                    <p>Entrer votre adresse de Livraison</p>
+                    <form action="#" class="info">
+                        <div class="form-group">
+                            <label for="numero">Numero</label>
+                            <input type="text" class="form-control text-left px-3" placeholder="Entrer le numero">
+                        </div>
+                        <div class="form-group">
+                            <label for="adresse">Adresse</label>
+                            <input type="text" class="form-control text-left px-3" placeholder="Entrer l'adresse">
+                        </div>
+                        <div class="form-group">
+                            <label for="zipcode">Zip/Code Postal</label>
+                            <input type="text" class="form-control text-left px-3" placeholder="Entrer le code postal">
+                        </div>
+                        <div class="form-group">
+                            <label for="region">Région</label>
+                            <input type="text" class="form-control text-left px-3" placeholder="Entrer la région">
+                        </div>
+                    </form>
+                </div>
+                <p><a href="checkout.html" class="btn btn-primary py-3 px-4">Estimate</a></p>
+            </div>
 
-						      <tr class="text-center">
-						        <td class="product-remove"><a href="#"><span class="ion-ios-close"></span></a></td>
-						        
-						        <td class="image-prod"><div class="img" style="background-image:url(images/product-4.jpg);"></div></td>
-						        
-						        <td class="product-name">
-						        	<h3>pro2</h3>
-						        </td>
-						        
-						        <td class="price">€15.70</td>
-						        
-						        <td class="quantity">
-						        	<div class="input-group mb-3">
-					             	<input type="text" name="quantity" class="quantity form-control input-number" value="1" min="1" max="100">
-					          	</div>
-					          </td>
-						        
-						        <td class="total">€15.70</td>
-						      </tr><!-- END TR-->
-						    </tbody>
-						  </table>
-					  </div>
-    			</div>
+            <!-- Cart Totals -->
+            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
+                <div class="cart-total mb-3">
+                    <h3>Total</h3>
+                    <p class="d-flex">
+                        <span>Sous-total</span>
+                        <span>€<?php 
+                            // Calculate subtotal
+                            $subtotal_query = "SELECT SUM(p.price_per_unit * oi.quantity) AS subtotal FROM order_items oi JOIN product p ON oi.product_id = p.product_id WHERE oi.order_id IN (SELECT MAX(order_id) FROM orders)";
+                            $subtotal_result = mysqli_query($conn, $subtotal_query);
+                            $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
+                            echo number_format($subtotal, 2);
+                        ?></span>
+                    </p>
+                    <p class="d-flex">
+                        <span>Livraison</span>
+                        <span>€0.00</span>
+                    </p>
+                    
+                    <hr>
+                    <p class="d-flex total-price">
+                        <span>Total</span>
+                        <span>€<?= number_format($subtotal, 2); ?></span>
+                    </p>
+                </div>
+                <p><a href="checkout.html" class="btn btn-primary py-3 px-4">Passer à la caisse</a></p>
+            </div>
+        </div>
+    </div>
     		</div>
     		<div class="row justify-content-end">
     			<!-- <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
@@ -141,61 +236,7 @@
 	                <input type="text" class="form-control text-left px-3" placeholder="">
 	              </div>
 	            </form>
-    				</div>
-    				<p><a href="checkout.html" class="btn btn-primary py-3 px-4">Apply Coupon</a></p>
-    			</div> -->
-    			<div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-    				<div class="cart-total mb-3">
-    					<h3>Livraison</h3>
-    					<p>Entrer votre adresse de Livraison</p>
-  						<form action="#" class="info">
-	              <!-- <div class="form-group">
-	              	<label for="">Country</label>
-	                <input type="text" class="form-control text-left px-3" placeholder="">
-	              </div> -->
-	              <div class="form-group">
-	              	<label for="country">Numero</label>
-	                <input type="text" class="form-control text-left px-3" placeholder="">
-	              </div>
-				  <div class="form-group">
-	              	<label for="country">Adresse</label>
-	                <input type="text" class="form-control text-left px-3" placeholder="">
-	              </div>
-	              <div class="form-group">
-	              	<label for="country">Zip/Code Postal</label>
-	                <input type="text" class="form-control text-left px-3" placeholder="">
-	              </div>
-				  <div class="form-group">
-					<label for="country">Région</label>
-				  <input type="text" class="form-control text-left px-3" placeholder="">
-				</div>
-	            </form>
-    				</div>
-    				<p><a href="checkout.html" class="btn btn-primary py-3 px-4">Estimate</a></p>
-    			</div>
-    			<div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-    				<div class="cart-total mb-3">
-    					<h3>Totale</h3>
-    					<p class="d-flex">
-    						<span>Subtotal</span>
-    						<span>€20.60</span>
-    					</p>
-    					<p class="d-flex">
-    						<span>Livraison</span>
-    						<span>€0.00</span>
-    					</p>
-    					
-    					<hr>
-    					<p class="d-flex total-price">
-    						<span>Total</span>
-    						<span>€17.60</span>
-    					</p>
-    				</div>
-    				<p><a href="checkout.html" class="btn btn-primary py-3 px-4">Passer à la caisse
-					</a></p>
-    			</div>
-    		</div>
-			</div>
+    				<
 		</section>
 
     <footer class="ftco-footer ftco-section">

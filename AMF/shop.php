@@ -1,9 +1,63 @@
 <?php
-// Start session at the very beginning of the file
 session_start();
+include 'db_connect.php';
 
-// Include database connection
-include 'db_connect.php'; 
+// Initialize cart in session if not already set
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
+// Process the 'Add to Cart' request
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
+    $product_id = intval($_POST['product_id']);
+    $quantity = intval($_POST['quantity']);
+
+    // Validate quantity
+    if ($quantity < 1) {
+        echo 'Quantité invalide.';
+        exit;
+    }
+
+    // Check if product already in cart
+    if (isset($_SESSION['cart'][$product_id])) {
+        $_SESSION['cart'][$product_id] += $quantity;
+    } else {
+        $_SESSION['cart'][$product_id] = $quantity;
+    }
+
+    // Insert order into the database
+    $order_date = date('Y-m-d H:i:s');
+    $total_amount = 0;
+
+    // Calculate total amount
+    $cart_items = $_SESSION['cart'];
+    foreach ($cart_items as $id => $qty) {
+        $product_query = "SELECT price_per_unit FROM product WHERE product_id = $id";
+        $product_result = mysqli_query($conn, $product_query);
+        $product = mysqli_fetch_assoc($product_result);
+        $total_amount += $product['price_per_unit'] * $qty;
+    }
+
+    // Insert order
+    $insert_order_query = "INSERT INTO orders (full_name, email, phone, address, postal_code, city, order_date, total_amount) VALUES ('', '', '', '', '', '', '$order_date', $total_amount)";
+    if (!mysqli_query($conn, $insert_order_query)) {
+        die('Error inserting order: ' . mysqli_error($conn));
+    }
+    $order_id = mysqli_insert_id($conn);
+
+    // Insert order items
+    foreach ($cart_items as $id => $qty) {
+        $insert_order_items_query = "INSERT INTO order_items (order_id, product_id, quantity) VALUES ($order_id, $id, $qty)";
+        if (!mysqli_query($conn, $insert_order_items_query)) {
+            die('Error inserting order item: ' . mysqli_error($conn));
+        }
+    }
+
+    // Clear the cart
+    $_SESSION['cart'] = [];
+
+    echo '<p>Order has been placed successfully. <a href="cart.php?order_id=' . $order_id . '">View your order</a></p>';
+}
 
 // Fetch categories for the filter menu and order them by category_id
 $category_query = "SELECT * FROM categories ORDER BY category_id ASC";
@@ -13,15 +67,9 @@ $category_result = mysqli_query($conn, $category_query);
 $category_id = isset($_GET['category_id']) ? intval($_GET['category_id']) : null;
 
 // Fetch products based on the selected category
-if ($category_id) {
-    $query = "SELECT * FROM product WHERE category_id = $category_id";
-} else {
-    $query = "SELECT * FROM product"; // If no category is selected, show all products
-}
-
+$query = $category_id ? "SELECT * FROM product WHERE category_id = $category_id" : "SELECT * FROM product";
 $result = mysqli_query($conn, $query);
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,7 +110,9 @@ $result = mysqli_query($conn, $query);
                     <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
                     <li class="nav-item"><a href="about.html" class="nav-link">À propos</a></li>
                     <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
-                    <li class="nav-item cta cta-colored"><a href="cart.html" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
+                    <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[<?php echo count($_SESSION['cart']); ?>]</a></li>
+                    <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-users"></span>
+
                 </ul>
             </div>
         </div>
@@ -72,7 +122,7 @@ $result = mysqli_query($conn, $query);
         <div class="container">
             <div class="row no-gutters slider-text align-items-center justify-content-center">
                 <div class="col-md-9 ftco-animate text-center">
-                    <p class="breadcrumbs"><span class="mr-2"><a href="index.html">Home</a></span> <span>Produits</span></p>
+                    <p class="breadcrumbs"><span class="mr-2"><a href="index.html">Produits</a></span> <span>Frais</span></p>
                     <h1 class="mb-0 bread">Produits</h1>
                 </div>
             </div>
@@ -98,30 +148,18 @@ $result = mysqli_query($conn, $query);
                         <div class="product">
                             <div class="text py-3 pb-4 px-3 text-center">
                                 <img class="img-fluid" src="<?= $row['image_url']; ?>" alt="<?= $row['name']; ?>">
-                                <div class="text py-3 pb-4 px-3 text-center">
                                     <h3><?= $row['name']; ?></h3>
                                     <div class="pricing">
-                                        <p class="price">€<?= $row['price_per_unit']; ?> par <?= $row['unit']; ?></p>
+                                        <p class="price">€<?= $row['price_per_unit']; ?> Kg</p>
                                     </div>
 
-                                    <form action="cart.php" method="POST" class="bottom-area d-flex flex-column align-items-center px-3">
+                                    <form action="product-single.php" method="POST" class="bottom-area d-flex flex-column align-items-center px-3">
                                         <input type="hidden" name="product_id" value="<?= $row['product_id']; ?>">
-                                        
-                                        <div class="form-group quantity-wrapper mb-2 d-flex align-items-center" data-max-quantity="<?= $row['stock_quantity']; ?>">
-                                            <button type="button" class="quantity-left-minus btn" data-field="quantity">
-                                                <i class="ion-ios-remove"></i>
-                                            </button>
-                                            <input type="number" name="quantity" value="1" class="form-control quantity-input text-center" readonly>
-                                            <button type="button" class="quantity-right-plus btn" data-field="quantity">
-                                                <i class="ion-ios-add"></i>
-                                            </button>
-                                        </div>
                                         
                                         <div class="buy-now-wrapper w-100">
                                             <input type="submit" name="add_to_cart" value="Ajouter au panier" class="btn btn-primary buy-now w-100">
                                         </div>
                                     </form>
-                                </div>
                             </div>
                         </div>
                     </div>
