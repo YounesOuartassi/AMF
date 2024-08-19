@@ -83,6 +83,7 @@ $result = mysqli_query($conn, $query);
     <link href="https://fonts.googleapis.com/css?family=Amatic+SC:400,700&display=swap" rel="stylesheet">
 
     <!-- Stylesheets -->
+     
     <link rel="stylesheet" href="css/open-iconic-bootstrap.min.css">
     <link rel="stylesheet" href="css/animate.css">
     <link rel="stylesheet" href="css/owl.carousel.min.css">
@@ -106,18 +107,85 @@ $result = mysqli_query($conn, $query);
 
             <div class="collapse navbar-collapse" id="ftco-nav">
                 <ul class="navbar-nav ml-auto">
-                    <li class="nav-item active"><a href="index.html" class="nav-link">Accueil</a></li>
-                    <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
+                <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
+                <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
                     <li class="nav-item"><a href="about.html" class="nav-link">À propos</a></li>
                     <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
+                    <button type="button" class="icon-users btn " data-toggle="modal" data-target=".conn"></button>
                     <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[<?php echo count($_SESSION['cart']); ?>]</a></li>
-                    <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-users"></span>
 
                 </ul>
             </div>
         </div>
     </nav>
+    <div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
+        <div class="modal-dialog ">
+            <div class="modal-content">
+                <div class="modal-header">
+					<h5 class="modal-title">Se Connecter</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">×</span>
+					</button>
+				</div>
+                <div class="modal-body">
+                <form method="post" id="contactFrm">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" class="form-control"required>
+                        
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password"class="form-control" required>
+                        <p>Vous n'avez pas de compte ?                     
+                        <button type="button" class="btn btn-white " data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button>
+                </form></div>
+                <div class="modal-footer">
+					<button type="submit" class="btn btn-primary">connexion</button>
+				</div>
+                
+            </div>
+        </div>
+    </div>
+    <div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
+    <div class="modal-dialog ">
+        <div class="modal-content">
+                <div class="modal-header">
+					<h5 class="modal-title">S'identifier</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">×</span>
+					</button>
+				</div>
+				<form method="post" id="contactFrm">
+				<div class="modal-body">
+						<label for="first_name">Prénom</label>
+						<input type="text" id="first_name" name="first_name" class="form-control" required>
 
+						<label for="last_name">Nom</label>
+						<input type="text" id="last_name" name="last_name" class="form-control" required>
+						
+						<label for="email">Email:</label>
+						<input type="email" id="email" name="email"class="form-control" required>
+						
+						<label for="password">Mot de passe</label>
+						<input type="password" id="password" name="password" class="form-control" required>
+						
+						<label for="phone">Numéro de téléphone </label>
+						<input type="text" id="phone" name="phone" class="form-control">
+						
+						<label for="address">Addresse</label>
+						<textarea id="address" name="address" class="form-control"></textarea>
+						
+						<label for="postal_code">Code Postale:</label>
+						<input type="text" id="postal_code" name="postal_code"class="form-control">
+						
+						<label for="city">Ville</label>
+						<input type="text" id="city" name="city"class="form-control">					
+					
+				</div>
+				<div class="modal-footer">
+					<button type="submit" class="btn btn-primary">identification</button>
+				</div>    
+        </div>
+    </div>
+    </div>
     <div class="hero-wrap hero-bread" style="background-image: url('images/bg_1.jpg');">
         <div class="container">
             <div class="row no-gutters slider-text align-items-center justify-content-center">
@@ -159,6 +227,7 @@ $result = mysqli_query($conn, $query);
                                         <div class="buy-now-wrapper w-100">
                                             <input type="submit" name="add_to_cart" value="Ajouter au panier" class="btn btn-primary buy-now w-100">
                                         </div>
+                                        
                                     </form>
                             </div>
                         </div>
@@ -235,7 +304,8 @@ $result = mysqli_query($conn, $query);
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiULgl1JY0H2s&sensor=false"></script>
     <script src="js/google-map.js"></script>
     <script src="js/main.js"></script>
-    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
     <!-- JavaScript for Quantity Adjustment -->
     <script>
     document.addEventListener('DOMContentLoaded', function () {
