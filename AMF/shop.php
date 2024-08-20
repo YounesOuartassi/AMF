@@ -106,16 +106,16 @@ $result = mysqli_query($conn, $query);
             </button>
 
             <div class="collapse navbar-collapse" id="ftco-nav">
-                <ul class="navbar-nav ml-auto">
+            <ul class="navbar-nav ml-auto">
                 <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
                 <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
-                    <li class="nav-item"><a href="about.html" class="nav-link">À propos</a></li>
-                    <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
-                    <button type="button" class="icon-users btn " data-toggle="modal" data-target=".conn"></button>
-                    <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[<?php echo count($_SESSION['cart']); ?>]</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">à propos</a></li>
+                <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
+                <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
 
-                </ul>
-            </div>
+                <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
+            </ul>
+        </div>
         </div>
     </nav>
     <div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">

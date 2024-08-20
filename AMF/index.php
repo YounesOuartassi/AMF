@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $address = htmlspecialchars(trim($_POST['address']));
         $postal_code = htmlspecialchars(trim($_POST['postal_code']));
         $city = htmlspecialchars(trim($_POST['city']));
-        
+
         // Server-side validation
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Adresse e-mail invalide.';
@@ -35,20 +35,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         if (empty($errors)) {
-            // Hash the password
-            $password_hash = password_hash($password, PASSWORD_BCRYPT);
-            
-            // Prepare SQL statement to prevent SQL injection
-            $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, password_hash, email, phone, address, postal_code, city) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssssssss", $first_name, $last_name, $password_hash, $email, $phone, $address, $postal_code, $city);
+            // Check if the email already exists
+            $stmt = $conn->prepare("SELECT email FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->store_result();
 
-            // Execute the statement
-            if ($stmt->execute()) {
-                $_SESSION['message'] = "Inscription réussie !";
-                $_SESSION['success'] = true;
-                $_SESSION['first_name'] = $first_name;
+            if ($stmt->num_rows > 0) {
+                $errors['email'] = 'Un compte avec cette adresse e-mail existe déjà.';
             } else {
-                $errors['database'] = "Erreur: " . $stmt->error;
+                // Hash the password
+                $password_hash = password_hash($password, PASSWORD_BCRYPT);
+
+                // Prepare SQL statement to prevent SQL injection
+                $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, password_hash, email, phone, address, postal_code, city) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssssssss", $first_name, $last_name, $password_hash, $email, $phone, $address, $postal_code, $city);
+
+                // Execute the statement
+                if ($stmt->execute()) {
+                    $_SESSION['registration_message'] = "Inscription réussie !";
+                } else {
+                    $errors['database'] = "Erreur: " . $stmt->error;
+                }
             }
 
             // Close the statement
@@ -65,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         // Collect and sanitize form data for login
         $email = htmlspecialchars(trim($_POST['email']));
         $password = htmlspecialchars(trim($_POST['password']));
-        
+
         // Server-side validation
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Adresse e-mail invalide.';
@@ -77,21 +85,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->bind_param("s", $email);
             $stmt->execute();
             $stmt->store_result();
-            
+
             if ($stmt->num_rows == 1) {
                 // Bind result variables
                 $stmt->bind_result($user_id, $first_name, $password_hash);
                 $stmt->fetch();
-                
+
                 // Verify password
                 if (password_verify($password, $password_hash)) {
                     // Password is correct
                     $_SESSION['user_id'] = $user_id;
                     $_SESSION['email'] = $email;
                     $_SESSION['first_name'] = $first_name;
+                    $_SESSION['loggedin'] = true;
 
-                    $_SESSION['message'] = "Connexion réussie !";
-                    $_SESSION['success'] = true;
+                    $_SESSION['login_message'] = "Connexion réussie !";
+                    header('Location: index.php');
+                    exit();
                 } else {
                     $errors['login'] = "Mot de passe invalide";
                 }
@@ -113,10 +123,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $conn->close();
 
     // Redirect to the same page to avoid resubmission
-    header('Location: index.php');
-    exit();
+    if (!isset($_SESSION['login_message'])) {
+        header('Location: index.php');
+        exit();
+    }
+}
+
+// Determine which modal to show
+$show_modal_class = '';
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
+    if (isset($_SESSION['registration_message'])) {
+        $message = $_SESSION['registration_message'];
+        unset($_SESSION['registration_message']);
+    }
+} else {
+    if (isset($_SESSION['errors'])) {
+        if (isset($_SESSION['errors']['login'])) {
+            $show_modal_class = 'conn'; // Login modal
+        } elseif (isset($_SESSION['errors']['registration'])) {
+            $show_modal_class = 'iden'; // Registration modal
+        }
+        unset($_SESSION['errors']);
+    }
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -162,16 +194,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
                 <li class="nav-item"><a href="about.html" class="nav-link">à propos</a></li>
                 <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
-                <button type="button" class="icon-users btn" data-toggle="modal" data-target=".conn"></button>
+                <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
+
                 <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
             </ul>
         </div>
     </div>
 </nav>
 
+
 <!-- Login Modal -->
 <div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Se Connecter</h5>
@@ -210,7 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <!-- Register Modal -->
 <div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">S'identifier</h5>
@@ -267,12 +301,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <?php endif; ?>
 
                     <p>Déjà inscrit ?
-                        <button type="button" class="btn btn-white" data-toggle="modal" data-target=".conn">Connectez-vous ici</button></p>						
+						<button type="button" class="btn btn-white" id="switchToLogin">Connectez-vous ici</button>
+					</p>
+										
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">S'inscrire</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Welcome Modal -->
+<div class="modal fade welcome-modal" tabindex="-1" role="dialog" aria-labelledby="Welcome" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bonjour</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bonjour, <span class="font-weight-bold text-primary"><?php echo htmlspecialchars($_SESSION['first_name']); ?></span> !</p>
+                <p>Merci de vous être connecté</p>
+
+            </div>
+            <div class="modal-footer">
+                <form action="logout.php" method="post">
+                    <button type="submit" class="btn btn-danger">Se déconnecter</button>
+                </form>
+                <a href="cart.php" class="btn btn-primary">Voir votre panier</a>
+                </div>
         </div>
     </div>
 </div>
@@ -312,6 +374,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	    </div>
     </section>
 
+<!-- Display Alerts -->
+<div class="container mt-4">
+    <?php if (isset($_SESSION['errors'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php foreach ($_SESSION['errors'] as $error): ?>
+                <?php echo $error . "<br>"; ?>
+            <?php endforeach; ?>
+            <!-- Trigger the correct modal based on the error context -->
+            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
+                Cliquez ici pour corriger les erreurs
+            </button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <?php unset($_SESSION['errors']); ?>
+    <?php endif; ?>
+
+
+    <?php if (isset($_SESSION['registration_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['registration_message']; ?>
+        <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php unset($_SESSION['registration_message']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['login_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['login_message']; ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php unset($_SESSION['login_message']); ?>
+<?php endif; ?>
+
+</div>
     <section class="ftco-section">
 			<div class="container">
 				<div class="row no-gutters ftco-services">
@@ -492,6 +595,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiULgl1JY0H2s&sensor=false"></script>
   <script src="js/google-map.js"></script>
   <script src="js/main.js"></script>
-  
+  <script src="js/modal-switch.js"></script>
+
   </body>
 </html>

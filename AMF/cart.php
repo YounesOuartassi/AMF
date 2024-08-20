@@ -89,26 +89,17 @@ $result = mysqli_query($conn, $query);
 					<span class="oi oi-menu"></span> Menu
 				</button>
 
-				<div class="collapse navbar-collapse" id="ftco-nav">
-					<ul class="navbar-nav ml-auto">
-					<li class="nav-item active"><a href="index.html" class="nav-link">Acceuil</a></li>
-					<li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
-					<!-- <li class="nav-item dropdown">
-					<a class="nav-link dropdown-toggle" href="#" id="dropdown04" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Acheter</a>
-					<div class="dropdown-menu" aria-labelledby="dropdown04">
-						<a class="dropdown-item" href="shop.html">Acheter</a>
-						<a class="dropdown-item" href="wishlist.html">Wishlist</a>
-						<a class="dropdown-item" href="product-single.html">Single Product</a>
-						<a class="dropdown-item" href="cart.html">Cart</a>
-						<a class="dropdown-item" href="checkout.html">Checkout</a>
-					</div>
-					</li> -->
-					<li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
-					<li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
-					<li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
+        <div class="collapse navbar-collapse" id="ftco-nav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
+                <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">à propos</a></li>
+                <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
+                <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
 
-					</ul>
-	      </div>
+                <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
+            </ul>
+        </div>
 	    </div>
 	  </nav>
 
