@@ -7,56 +7,135 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
-// Process the 'Add to Cart' request
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
-    $product_id = intval($_POST['product_id']);
-    $quantity = intval($_POST['quantity']);
 
-    // Validate quantity
-    if ($quantity < 1) {
-        echo 'Quantité invalide.';
-        exit;
-    }
 
-    // Check if product already in cart
-    if (isset($_SESSION['cart'][$product_id])) {
-        $_SESSION['cart'][$product_id] += $quantity;
-    } else {
-        $_SESSION['cart'][$product_id] = $quantity;
-    }
+// Handle form submissions for login and registration
+$message = '';
+$errors = [];
 
-    // Insert order into the database
-    $order_date = date('Y-m-d H:i:s');
-    $total_amount = 0;
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['register'])) {
+        // Registration logic
+        $first_name = htmlspecialchars(trim($_POST['first_name']));
+        $last_name = htmlspecialchars(trim($_POST['last_name']));
+        $email = htmlspecialchars(trim($_POST['email']));
+        $password = htmlspecialchars(trim($_POST['password']));
+        $phone = htmlspecialchars(trim($_POST['phone']));
+        $address = htmlspecialchars(trim($_POST['address']));
+        $postal_code = htmlspecialchars(trim($_POST['postal_code']));
+        $city = htmlspecialchars(trim($_POST['city']));
 
-    // Calculate total amount
-    $cart_items = $_SESSION['cart'];
-    foreach ($cart_items as $id => $qty) {
-        $product_query = "SELECT price_per_unit FROM product WHERE product_id = $id";
-        $product_result = mysqli_query($conn, $product_query);
-        $product = mysqli_fetch_assoc($product_result);
-        $total_amount += $product['price_per_unit'] * $qty;
-    }
+        // Server-side validation
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Adresse e-mail invalide.';
+        }
+        if (strlen($phone) != 10 || !ctype_digit($phone)) {
+            $errors['phone'] = 'Le numéro de téléphone doit comporter 10 chiffres.';
+        }
+        if (strlen($password) < 6) {
+            $errors['password'] = 'Le mot de passe doit comporter au moins 6 caractères.';
+        }
+        if (empty($first_name) || empty($last_name) || empty($address) || empty($postal_code) || empty($city)) {
+            $errors['fields'] = 'Tous les champs sont obligatoires.';
+        }
 
-    // Insert order
-    $insert_order_query = "INSERT INTO orders (full_name, email, phone, address, postal_code, city, order_date, total_amount) VALUES ('', '', '', '', '', '', '$order_date', $total_amount)";
-    if (!mysqli_query($conn, $insert_order_query)) {
-        die('Error inserting order: ' . mysqli_error($conn));
-    }
-    $order_id = mysqli_insert_id($conn);
+        if (empty($errors)) {
+            $stmt = $conn->prepare("SELECT email FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->store_result();
 
-    // Insert order items
-    foreach ($cart_items as $id => $qty) {
-        $insert_order_items_query = "INSERT INTO order_items (order_id, product_id, quantity) VALUES ($order_id, $id, $qty)";
-        if (!mysqli_query($conn, $insert_order_items_query)) {
-            die('Error inserting order item: ' . mysqli_error($conn));
+            if ($stmt->num_rows > 0) {
+                $errors['email'] = 'Un compte avec cette adresse e-mail existe déjà.';
+            } else {
+                $password_hash = password_hash($password, PASSWORD_BCRYPT);
+                $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, password_hash, email, phone, address, postal_code, city) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssssssss", $first_name, $last_name, $password_hash, $email, $phone, $address, $postal_code, $city);
+
+                if ($stmt->execute()) {
+                    $_SESSION['registration_message'] = "Inscription réussie !";
+                } else {
+                    $errors['database'] = "Erreur: " . $stmt->error;
+                }
+            }
+
+            $stmt->close();
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['show_modal'] = 'register';
         }
     }
 
-    // Clear the cart
-    $_SESSION['cart'] = [];
+    if (isset($_POST['login'])) {
+        // Login logic
+        $email = htmlspecialchars(trim($_POST['email']));
+        $password = htmlspecialchars(trim($_POST['password']));
 
-    echo '<p>Order has been placed successfully. <a href="cart.php?order_id=' . $order_id . '">View your order</a></p>';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Adresse e-mail invalide.';
+        }
+
+        if (empty($errors)) {
+            $stmt = $conn->prepare("SELECT user_id, first_name, password_hash FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->store_result();
+
+            if ($stmt->num_rows == 1) {
+                $stmt->bind_result($user_id, $first_name, $password_hash);
+                $stmt->fetch();
+
+                if (password_verify($password, $password_hash)) {
+                    $_SESSION['user_id'] = $user_id;
+                    $_SESSION['email'] = $email;
+                    $_SESSION['first_name'] = $first_name;
+                    $_SESSION['loggedin'] = true;
+
+                    $_SESSION['login_message'] = "Connexion réussie !";
+                    header('Location: shop.php');
+                    exit();
+                } else {
+                    $errors['login'] = "Mot de passe invalide";
+                }
+            } else {
+                $errors['login'] = "Aucun compte trouvé avec cette adresse e-mail.";
+            }
+
+            $stmt->close();
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            $_SESSION['show_modal'] = 'login';
+        }
+    }
+
+    $conn->close();
+
+    if (!isset($_SESSION['login_message'])) {
+        header('Location: shop.php');
+        exit();
+    }
+}
+
+// Determine which modal to show
+$show_modal_class = '';
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
+    if (isset($_SESSION['registration_message'])) {
+        $message = $_SESSION['registration_message'];
+        unset($_SESSION['registration_message']);
+    }
+} else {
+    if (isset($_SESSION['errors'])) {
+        if (isset($_SESSION['errors']['login'])) {
+            $show_modal_class = 'conn'; // Login modal
+        } elseif (isset($_SESSION['errors']['registration'])) {
+            $show_modal_class = 'iden'; // Registration modal
+        }
+        unset($_SESSION['errors']);
+    }
 }
 
 // Fetch categories for the filter menu and order them by category_id
@@ -70,6 +149,7 @@ $category_id = isset($_GET['category_id']) ? intval($_GET['category_id']) : null
 $query = $category_id ? "SELECT * FROM product WHERE category_id = $category_id" : "SELECT * FROM product";
 $result = mysqli_query($conn, $query);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -109,8 +189,8 @@ $result = mysqli_query($conn, $query);
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
                 <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
-                <li class="nav-item"><a href="about.html" class="nav-link">à propos</a></li>
-                <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
+                <li class="nav-item"><a href="about.php" class="nav-link">à propos</a></li>
+                <li class="nav-item"><a href="contact.php" class="nav-link">Contact</a></li>
                 <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
 
                 <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
@@ -118,74 +198,142 @@ $result = mysqli_query($conn, $query);
         </div>
         </div>
     </nav>
-    <div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
-        <div class="modal-dialog ">
-            <div class="modal-content">
-                <div class="modal-header">
-					<h5 class="modal-title">Se Connecter</h5>
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-						<span aria-hidden="true">×</span>
-					</button>
-				</div>
-                <div class="modal-body">
-                <form method="post" id="contactFrm">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" class="form-control"required>
-                        
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password"class="form-control" required>
-                        <p>Vous n'avez pas de compte ?                     
-                        <button type="button" class="btn btn-white " data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button>
-                </form></div>
-                <div class="modal-footer">
-					<button type="submit" class="btn btn-primary">connexion</button>
-				</div>
-                
+    <!-- Login Modal -->
+<div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Se Connecter</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="">
+                    <label for="email_login">Email:</label>
+                    <input type="email" id="email_login" name="email" class="form-control" required>
+
+                    <label for="password_login">Mot de passe:</label>
+                    <input type="password" id="password_login" name="password" class="form-control" required>
+
+                    <input type="hidden" name="login" value="1">
+
+                    <?php if (isset($errors['login'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['login']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($message) && empty($errors)): ?>
+                        <div class="alert alert-success"><?php echo $message; ?></div>
+                    <?php endif; ?>
+
+                    <p>Vous n'avez pas de compte ?
+                        <button type="button" class="btn btn-white" data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button></p>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Connexion</button>
+                </form>
             </div>
         </div>
     </div>
-    <div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
-    <div class="modal-dialog ">
-        <div class="modal-content">
-                <div class="modal-header">
-					<h5 class="modal-title">S'identifier</h5>
-					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-						<span aria-hidden="true">×</span>
-					</button>
-				</div>
-				<form method="post" id="contactFrm">
-				<div class="modal-body">
-						<label for="first_name">Prénom</label>
-						<input type="text" id="first_name" name="first_name" class="form-control" required>
+</div>
 
-						<label for="last_name">Nom</label>
-						<input type="text" id="last_name" name="last_name" class="form-control" required>
-						
-						<label for="email">Email:</label>
-						<input type="email" id="email" name="email"class="form-control" required>
-						
-						<label for="password">Mot de passe</label>
-						<input type="password" id="password" name="password" class="form-control" required>
-						
-						<label for="phone">Numéro de téléphone </label>
-						<input type="text" id="phone" name="phone" class="form-control">
-						
-						<label for="address">Addresse</label>
-						<textarea id="address" name="address" class="form-control"></textarea>
-						
-						<label for="postal_code">Code Postale:</label>
-						<input type="text" id="postal_code" name="postal_code"class="form-control">
-						
-						<label for="city">Ville</label>
-						<input type="text" id="city" name="city"class="form-control">					
-					
-				</div>
-				<div class="modal-footer">
-					<button type="submit" class="btn btn-primary">identification</button>
-				</div>    
+<!-- Register Modal -->
+<div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">S'identifier</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <form method="post" action="">
+                <div class="modal-body">
+                    <label for="first_name">Prénom</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" required>
+                    
+                    <label for="last_name">Nom</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" required>
+
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+
+                    <label for="phone">Téléphone</label>
+                    <input type="text" id="phone" name="phone" class="form-control" required>
+
+                    <label for="address">Adresse</label>
+                    <input type="text" id="address" name="address" class="form-control" required>
+
+                    <label for="postal_code">Code postal</label>
+                    <input type="text" id="postal_code" name="postal_code" class="form-control" required>
+
+                    <label for="city">Ville</label>
+                    <input type="text" id="city" name="city" class="form-control" required>
+
+                    <input type="hidden" name="register" value="1">
+
+                    <?php if (isset($errors['fields'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['fields']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($errors['email'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['email']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($errors['phone'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['phone']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($errors['password'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['password']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($message) && empty($errors)): ?>
+                        <div class="alert alert-success"><?php echo $message; ?></div>
+                    <?php endif; ?>
+
+                    <p>Déjà inscrit ?
+						<button type="button" class="btn btn-white" id="switchToLogin">Connectez-vous ici</button>
+					</p>
+										
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">S'inscrire</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
+
+<!-- Welcome Modal -->
+<div class="modal fade welcome-modal" tabindex="-1" role="dialog" aria-labelledby="Welcome" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bonjour</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bonjour, <span class="font-weight-bold text-primary"><?php echo htmlspecialchars($_SESSION['first_name']); ?></span> !</p>
+                <p>Merci de vous être connecté</p>
+
+            </div>
+            <div class="modal-footer">
+                <form action="logout.php" method="post">
+                    <button type="submit" class="btn btn-danger">Se déconnecter</button>
+                </form>
+                <a href="cart.php" class="btn btn-primary">Voir votre panier</a>
+                </div>
+        </div>
     </div>
+</div>
+
     <div class="hero-wrap hero-bread" style="background-image: url('images/bg_1.jpg');">
         <div class="container">
             <div class="row no-gutters slider-text align-items-center justify-content-center">
@@ -196,6 +344,46 @@ $result = mysqli_query($conn, $query);
             </div>
         </div>
     </div>
+
+    <!-- Display Alerts -->
+<div class="container mt-4">
+    <?php if (isset($_SESSION['errors'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php foreach ($_SESSION['errors'] as $error): ?>
+                <?php echo $error . "<br>"; ?>
+            <?php endforeach; ?>
+            <!-- Trigger the correct modal based on the error context -->
+            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
+                Cliquez ici pour corriger les erreurs
+            </button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <?php unset($_SESSION['errors']); ?>
+    <?php endif; ?>
+
+
+    <?php if (isset($_SESSION['registration_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['registration_message']; ?>
+        <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php unset($_SESSION['registration_message']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['login_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['login_message']; ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php unset($_SESSION['login_message']); ?>
+<?php endif; ?>
 
     <section class="ftco-section">
         <div class="container">
@@ -223,12 +411,11 @@ $result = mysqli_query($conn, $query);
 
                                     <form action="product-single.php" method="POST" class="bottom-area d-flex flex-column align-items-center px-3">
                                         <input type="hidden" name="product_id" value="<?= $row['product_id']; ?>">
-                                        
                                         <div class="buy-now-wrapper w-100">
                                             <input type="submit" name="add_to_cart" value="Ajouter au panier" class="btn btn-primary buy-now w-100">
                                         </div>
-                                        
                                     </form>
+
                             </div>
                         </div>
                     </div>
@@ -306,32 +493,7 @@ $result = mysqli_query($conn, $query);
     <script src="js/main.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-    <!-- JavaScript for Quantity Adjustment -->
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Loop through all quantity wrappers on the page
-        document.querySelectorAll('.quantity-wrapper').forEach(function (wrapper) {
-            const quantityInput = wrapper.querySelector('.quantity-input');
-            const minQuantity = 1; // Minimum quantity
-            const maxQuantity = parseInt(wrapper.getAttribute('data-max-quantity'), 10); // Max quantity from data attribute
-
-            // Decrement button event
-            wrapper.querySelector('.quantity-left-minus').addEventListener('click', function () {
-                let currentValue = parseInt(quantityInput.value, 10);
-                if (currentValue > minQuantity) {
-                    quantityInput.value = currentValue - 1;
-                }
-            });
-
-            // Increment button event
-            wrapper.querySelector('.quantity-right-plus').addEventListener('click', function () {
-                let currentValue = parseInt(quantityInput.value, 10);
-                if (currentValue < maxQuantity) {
-                    quantityInput.value = currentValue + 1;
-                }
-            });
-        });
-    });
+    
     </script>
 </body>
 </html>

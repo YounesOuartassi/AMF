@@ -114,7 +114,184 @@ $result = mysqli_query($conn, $query);
       </div>
     </div>
 
-    <section class="ftco-section ftco-cart">
+<!-- Login Modal -->
+<div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Se Connecter</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="">
+                    <label for="email_login">Email:</label>
+                    <input type="email" id="email_login" name="email" class="form-control" required>
+
+                    <label for="password_login">Mot de passe:</label>
+                    <input type="password" id="password_login" name="password" class="form-control" required>
+
+                    <input type="hidden" name="login" value="1">
+
+                    <?php if (isset($errors['login'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['login']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($message) && empty($errors)): ?>
+                        <div class="alert alert-success"><?php echo $message; ?></div>
+                    <?php endif; ?>
+
+                    <p>Vous n'avez pas de compte ?
+                        <button type="button" class="btn btn-white" data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button></p>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Connexion</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">S'identifier</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <form method="post" action="">
+                <div class="modal-body">
+                    <label for="first_name">Prénom</label>
+                    <input type="text" id="first_name" name="first_name" class="form-control" required>
+                    
+                    <label for="last_name">Nom</label>
+                    <input type="text" id="last_name" name="last_name" class="form-control" required>
+
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+
+                    <label for="phone">Téléphone</label>
+                    <input type="text" id="phone" name="phone" class="form-control" required>
+
+                    <label for="address">Adresse</label>
+                    <input type="text" id="address" name="address" class="form-control" required>
+
+                    <label for="postal_code">Code postal</label>
+                    <input type="text" id="postal_code" name="postal_code" class="form-control" required>
+
+                    <label for="city">Ville</label>
+                    <input type="text" id="city" name="city" class="form-control" required>
+
+                    <input type="hidden" name="register" value="1">
+
+                    <?php if (isset($errors['fields'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['fields']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($errors['email'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['email']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($errors['phone'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['phone']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($errors['password'])): ?>
+                        <div class="alert alert-danger"><?php echo $errors['password']; ?></div>
+                    <?php endif; ?>
+
+                    <?php if (isset($message) && empty($errors)): ?>
+                        <div class="alert alert-success"><?php echo $message; ?></div>
+                    <?php endif; ?>
+
+                    <p>Déjà inscrit ?
+						<button type="button" class="btn btn-white" id="switchToLogin">Connectez-vous ici</button>
+					</p>
+										
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">S'inscrire</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- Welcome Modal -->
+<div class="modal fade welcome-modal" tabindex="-1" role="dialog" aria-labelledby="Welcome" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Bonjour</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bonjour, <span class="font-weight-bold text-primary"><?php echo htmlspecialchars($_SESSION['first_name']); ?></span> !</p>
+                <p>Merci de vous être connecté</p>
+
+            </div>
+            <div class="modal-footer">
+                <form action="logout.php" method="post">
+                    <button type="submit" class="btn btn-danger">Se déconnecter</button>
+                </form>
+                <a href="cart.php" class="btn btn-primary">Voir votre panier</a>
+                </div>
+        </div>
+    </div>
+</div>
+
+<!-- Display Alerts -->
+<div class="container mt-4">
+    <?php if (isset($_SESSION['errors'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?php foreach ($_SESSION['errors'] as $error): ?>
+                <?php echo $error . "<br>"; ?>
+            <?php endforeach; ?>
+            <!-- Trigger the correct modal based on the error context -->
+            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
+                Cliquez ici pour corriger les erreurs
+            </button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <?php unset($_SESSION['errors']); ?>
+    <?php endif; ?>
+
+
+    <?php if (isset($_SESSION['registration_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['registration_message']; ?>
+        <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php unset($_SESSION['registration_message']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['login_message'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?php echo $_SESSION['login_message']; ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php unset($_SESSION['login_message']); ?>
+<?php endif; ?>
+
+</div>
+<section class="ftco-section ftco-cart">
 	<div class="container">
         <div class="row">
             <div class="col-md-12 ftco-animate">

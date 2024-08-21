@@ -147,9 +147,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
     }
 }
 ?>
-
-
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -179,10 +176,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
     <link rel="stylesheet" href="css/flaticon.css">
     <link rel="stylesheet" href="css/icomoon.css">
     <link rel="stylesheet" href="css/style.css">
-	
   </head>	
-  <body>
-<nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
+  <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
     <div class="container">
         <a class="navbar-brand" href="index.php">Au Maraicher Des Flandres</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
@@ -190,7 +185,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
         </button>
         <div class="collapse navbar-collapse" id="ftco-nav">
             <ul class="navbar-nav ml-auto">
-            <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
+                <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
                 <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
                 <li class="nav-item"><a href="about.php" class="nav-link">à propos</a></li>
                 <li class="nav-item"><a href="contact.php" class="nav-link">Contact</a></li>
@@ -201,7 +196,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
         </div>
     </div>
 </nav>
-
 
 <!-- Login Modal -->
 <div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
@@ -340,39 +334,17 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 </div>
 
 
-    <section id="home-section" class="hero">
-		  <div class="home-slider owl-carousel">
-	      <div class="slider-item" style="background-image: url(images/amf3.jpg);">
-	      	<div class="overlay"></div>
-	        <div class="container">
-	          <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
 
-	            <div class="col-md-12 ftco-animate text-center">
-	              <h1 class="mb-2">On vous sert des Legumes &amp; Fruits Frais</h1>
-	              <h2 class="subheading mb-4">On vous livre vos Fruits &amp; Legumes</h2>
-	              <p><a href="#" class="btn btn-primary">Details</a></p>
-	            </div>
-
-	          </div>
-	        </div>
-	      </div>
-
-	      <div class="slider-item" style="background-image: url(images/amf1.jpg);">
-	      	<div class="overlay"></div>
-	        <div class="container">
-	          <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
-
-	            <div class="col-sm-12 ftco-animate text-center">
-	              <h1 class="mb-2">Aliments 100% Frais &amp;  Organic</h1>
-	              <h2 class="subheading mb-4">On vous livre vos Fruits &amp; Legumes</h2>
-	              <p><a href="#" class="btn btn-primary">Details</a></p>
-	            </div>
-
-	          </div>
-	        </div>
-	      </div>
-	    </div>
-    </section>
+    <div class="hero-wrap hero-bread" style="background-image: url('images/bg_1.jpg');">
+      <div class="container">
+        <div class="row no-gutters slider-text align-items-center justify-content-center">
+          <div class="col-md-9 ftco-animate text-center">
+          	<p class="breadcrumbs"><span class="mr-2"><a href="index.html">Acceuil</a></span> <span>à propos</span></p>
+            <h1 class="mb-0 bread">à propos de nous</h1>
+          </div>
+        </div>
+      </div>
+    </div>
 
 <!-- Display Alerts -->
 <div class="container mt-4">
@@ -415,7 +387,74 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 <?php endif; ?>
 
 </div>
-    <section class="ftco-section">
+    <section class="ftco-section ftco-no-pb ftco-no-pt bg-light">
+			<div class="container">
+				<div class="row">
+					<div class="col-md-5 p-md-5 img img-2 d-flex justify-content-center align-items-center" style="background-image: url(images/about.jpg);">
+						<!-- <a href="https://vimeo.com/45830194" class="icon popup-vimeo d-flex justify-content-center align-items-center">
+							<span class="icon-play"></span>
+						</a> -->
+					</div>
+					<div class="col-md-7 py-5 wrap-about pb-md-5 ftco-animate">
+	          <div class="heading-section-bold mb-4 mt-md-5">
+	          	<div class="ml-md-0">
+		            <h2 class="mb-4">Bienvenue Au Maraicher Des Flandres</h2>
+	            </div>
+	          </div>
+	          <div class="pb-md-5">
+	          	<p>Loin, très loin, derrière les montagnes de mots, loin des régions de Provence et de Bretagne, se trouvent les vergers de Fraîcheur, où poussent des fruits et légumes exceptionnels. Séparés de l'agitation urbaine, ils prospèrent à Verdureville, sur la côte des Saveurs, un vaste océan de fraîcheur et de goût.</p>
+							<p>Mais rien ne pouvait convaincre la citadine habituée aux supermarchés, jusqu'à ce qu'une équipe de passionnés l'invite à découvrir nos produits. Ils l'ont emmenée en excursion, l'ont fait goûter aux délices de la nature, et l'ont guidée vers notre marché. Là, elle a découvert les saveurs authentiques et la qualité incomparable de nos fruits et légumes frais..</p>
+							<p><a href="shop.html" class="btn btn-primary">Acheter maintenant</a></p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		
+		<section class="ftco-section ftco-counter img" id="section-counter" style="background-image: url(images/bg_3.jpg);">
+    	<div class="container">
+    		<div class="row justify-content-center py-5">
+    			<div class="col-md-10">
+		    		<div class="row">
+		          <div class="col-md-3 d-flex justify-content-center counter-wrap ftco-animate">
+		            <div class="block-18 text-center">
+		              <div class="text">
+		                <strong class="number" data-number="10000">0</strong>
+		                <span>Happy Customers</span>
+		              </div>
+		            </div>
+		          </div>
+		          <div class="col-md-3 d-flex justify-content-center counter-wrap ftco-animate">
+		            <div class="block-18 text-center">
+		              <div class="text">
+		                <strong class="number" data-number="100">0</strong>
+		                <span>Branches</span>
+		              </div>
+		            </div>
+		          </div>
+		          <div class="col-md-3 d-flex justify-content-center counter-wrap ftco-animate">
+		            <div class="block-18 text-center">
+		              <div class="text">
+		                <strong class="number" data-number="1000">0</strong>
+		                <span>Partner</span>
+		              </div>
+		            </div>
+		          </div>
+		          <div class="col-md-3 d-flex justify-content-center counter-wrap ftco-animate">
+		            <div class="block-18 text-center">
+		              <div class="text">
+		                <strong class="number" data-number="100">0</strong>
+		                <span>Awards</span>
+		              </div>
+		            </div>
+		          </div>
+		        </div>
+	        </div>
+        </div>
+    	</div>
+    </section>
+		<section class="ftco-section">
 			<div class="container">
 				<div class="row no-gutters ftco-services">
           <div class="col-md-3 text-center d-flex align-self-stretch ftco-animate">
@@ -466,51 +505,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 			</div>
 		</section>
 
-		<section class="ftco-section ftco-category ftco-no-pt">
-			<div class="container">
-				<div class="row">
-					<div class="col-md-8">
-						<div class="row">
-							<div class="col-md-6 order-md-last align-items-stretch d-flex">
-								<div class="category-wrap-2 ftco-animate img align-self-stretch d-flex" style="background-image: url(images/category.jpg);">
-									<div class="text text-center">
-										<h2>Légumes</h2>
-										<p>Protégez la santé de chaque foyer</p>
-										<p><a href="shop.php" class="btn btn-primary">Achetez maintenant</a></p>
-									</div>
-								</div>
-							</div>
-							<div class="col-md-6">
-								<div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(images/amf2.jpg);">
-									<div class="text px-3 py-1">
-										<h2 class="mb-0"><a href="shop.php?category_id=2">Fruits</a></h2>
-									</div>		
-								</div>
-								<div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(images/amf4.jpg);">
-									<div class="text px-3 py-1">
-										<h2 class="mb-0"><a href="shop.php?category_id=1">Légumes</a></h2>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div class="col-md-4">
-						<div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(images/amf5.jpg);">
-							<div class="text px-3 py-1">
-								<h2 class="mb-0"><a href="shop.php?category_id=3">Jus</a></h2>
-							</div>		
-						</div>
-						<div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(images/category-4.jpg);">
-							<div class="text px-3 py-1">
-								<h2 class="mb-0"><a href="shop.php?category_id=4">Fruits Sec</a></h2>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-
     <footer class="ftco-footer ftco-section">
 		<div class="container">
 			<div class="row">
@@ -526,7 +520,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 				<h2 class="ftco-heading-2">Au Maraicher Des Flandres</h2>
 				<ul class="ftco-footer-social list-unstyled float-md-left float-lft mt-5">
 				  <li class="ftco-animate"><a href="#"><span class="icon-twitter"></span></a></li>
-				  <li class="ftco-animate"><a href=""><span class="icon-facebook"></span></a></li>
+				  <li class="ftco-animate"><a href="https://www.facebook.com/aumaraichersdesflandres/"><span class="icon-facebook"></span></a></li>
 				  <li class="ftco-animate"><a href="https://www.instagram.com/au_maraicher_des_flandres"><span class="icon-instagram"></span></a></li>
 				</ul>
 			  </div>
@@ -572,12 +566,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 			</div>
 		</div>
 	</footer>
+    
   
 
   <!-- loader -->
   <div id="ftco-loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/></svg></div>
 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
   <script src="js/jquery.min.js"></script>
   <script src="js/jquery-migrate-3.0.1.min.js"></script>
@@ -595,7 +589,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiULgl1JY0H2s&sensor=false"></script>
   <script src="js/google-map.js"></script>
   <script src="js/main.js"></script>
-  <script src="js/modal-switch.js"></script>
-
+    
   </body>
 </html>
