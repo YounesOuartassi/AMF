@@ -2,54 +2,51 @@
 // Include your database connection
 include('db_connect.php');
 
-// Start session to store messages
+// Start session
 session_start();
 
-// Check if the form is submitted
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Get form data
-    $product_id = intval($_POST['product_id']);
-    $quantity = intval($_POST['quantity']);
-    $unit = htmlspecialchars($_POST['unit']);
+// Initialize a flag to show the modal
+$showLoginModal = false;
+$loginMessage = "";
 
-    // Check if the product exists in the database
-    $query = "SELECT * FROM product WHERE product_id = $product_id";
-    $result = mysqli_query($conn, $query);
+// Function to get the user ID (Assuming you have a session variable 'user_id' set upon login)
+$user_id = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : 0;
 
-    if ($result && mysqli_num_rows($result) > 0) {
-        // Product exists
-        $product = mysqli_fetch_assoc($result);
-
-        // Calculate the order total (This is a simplified version, assuming one item per order)
-        $total_amount = $product['price_per_unit'] * $quantity;
-
-        // Insert a new order in the `orders` table (You may need to add more details depending on your requirements)
-        $insert_order_query = "INSERT INTO orders (full_name, email, total_amount) VALUES ('', '', $total_amount)";
-        mysqli_query($conn, $insert_order_query);
-        
-        // Get the last inserted order_id
-        $order_id = mysqli_insert_id($conn);
-
-        // Insert the order item into the `order_items` table
-        $insert_order_item_query = "INSERT INTO order_items (order_id, product_id, quantity, unit) VALUES ($order_id, $product_id, $quantity, '$unit')";
-        mysqli_query($conn, $insert_order_item_query);
-
-        // Set a session message
-        $_SESSION['message'] = "Votre article a été ajouté au panier";
-
-        // Redirect back to the shop page
-        header("Location: shop.php");
-        exit;
-    } else {
-        echo "Product not found.";
-        exit;
-    }
+if ($user_id == 0) {
+    // Set the flag to show the login modal
+    $showLoginModal = true;
+    $loginMessage = "Veuillez vous connecter pour voir votre panier";
+}
+// Handle removing an item from the cart
+if (isset($_GET['remove'])) {
+    $item_id = intval($_GET['remove']);
+    
+    // Delete item from the cart for the current user
+    $delete_query = "DELETE FROM order_items WHERE order_id = (SELECT MAX(order_id) FROM orders WHERE user_id = $user_id) AND product_id = $item_id";
+    mysqli_query($conn, $delete_query);
+    
+    // Redirect to cart page
+    header("Location: cart.php");
+    exit;
 }
 
-// Display the cart items
-$query = "SELECT * FROM order_items oi JOIN product p ON oi.product_id = p.product_id WHERE oi.order_id IN (SELECT MAX(order_id) FROM orders)";
+// Get the current cart
+$query = "
+    SELECT * FROM order_items oi
+    JOIN product p ON oi.product_id = p.product_id
+    WHERE oi.order_id = (SELECT MAX(order_id) FROM orders WHERE user_id = $user_id)
+";
 $result = mysqli_query($conn, $query);
 
+// Calculate subtotal for cart
+$subtotal_query = "
+    SELECT SUM(p.price_per_unit * oi.quantity) AS subtotal
+    FROM order_items oi
+    JOIN product p ON oi.product_id = p.product_id
+    WHERE oi.order_id = (SELECT MAX(order_id) FROM orders WHERE user_id = $user_id)
+";
+$subtotal_result = mysqli_query($conn, $subtotal_query);
+$subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
 ?>
 
 <!DOCTYPE html>
@@ -82,6 +79,7 @@ $result = mysqli_query($conn, $query);
     <link rel="stylesheet" href="css/icomoon.css">
     <link rel="stylesheet" href="css/style.css">
   </head>	
+  <body>
     <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
 	    <div class="container">
 				<a class="navbar-brand" href="index.html">Au Maraicher Des Flandres</a>
@@ -113,124 +111,119 @@ $result = mysqli_query($conn, $query);
         </div>
       </div>
     </div>
-
+    
 <!-- Login Modal -->
-<div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Se Connecter</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
+<div class="modal fade conn" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Se Connecter</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <?php if ($showLoginModal): ?>
+                        <div class="alert alert-warning" role="alert">
+                            <?php echo htmlspecialchars($loginMessage); ?>
+                        </div>
+                    <?php endif; ?>
+                    <form method="post" action="">
+                        <label for="email_login">Email:</label>
+                        <input type="email" id="email_login" name="email" class="form-control" required>
+
+                        <label for="password_login">Mot de passe:</label>
+                        <input type="password" id="password_login" name="password" class="form-control" required>
+
+                        <input type="hidden" name="login" value="1">
+
+                        <?php if (isset($errors['login'])): ?>
+                            <div class="alert alert-danger"><?php echo $errors['login']; ?></div>
+                        <?php endif; ?>
+
+                        <?php if (isset($message) && empty($errors)): ?>
+                            <div class="alert alert-success"><?php echo $message; ?></div>
+                        <?php endif; ?>
+
+                        <p>Vous n'avez pas de compte ?
+                            <button type="button" class="btn btn-white" data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Connexion</button>
+                    </form>
+                </div>
             </div>
-            <div class="modal-body">
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">S'identifier</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
                 <form method="post" action="">
-                    <label for="email_login">Email:</label>
-                    <input type="email" id="email_login" name="email" class="form-control" required>
+                    <div class="modal-body">
+                        <label for="first_name">Prénom</label>
+                        <input type="text" id="first_name" name="first_name" class="form-control" required>
+                        
+                        <label for="last_name">Nom</label>
+                        <input type="text" id="last_name" name="last_name" class="form-control" required>
 
-                    <label for="password_login">Mot de passe:</label>
-                    <input type="password" id="password_login" name="password" class="form-control" required>
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
 
-                    <input type="hidden" name="login" value="1">
+                        <label for="password">Mot de passe</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
 
-                    <?php if (isset($errors['login'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['login']; ?></div>
-                    <?php endif; ?>
+                        <label for="phone">Téléphone</label>
+                        <input type="text" id="phone" name="phone" class="form-control" required>
 
-                    <?php if (isset($message) && empty($errors)): ?>
-                        <div class="alert alert-success"><?php echo $message; ?></div>
-                    <?php endif; ?>
+                        <label for="address">Adresse</label>
+                        <input type="text" id="address" name="address" class="form-control" required>
 
-                    <p>Vous n'avez pas de compte ?
-                        <button type="button" class="btn btn-white" data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button></p>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Connexion</button>
+                        <label for="postal_code">Code postal</label>
+                        <input type="text" id="postal_code" name="postal_code" class="form-control" required>
+
+                        <label for="city">Ville</label>
+                        <input type="text" id="city" name="city" class="form-control" required>
+
+                        <input type="hidden" name="register" value="1">
+
+                        <?php if (isset($errors['fields'])): ?>
+                            <div class="alert alert-danger"><?php echo $errors['fields']; ?></div>
+                        <?php endif; ?>
+
+                        <?php if (isset($errors['email'])): ?>
+                            <div class="alert alert-danger"><?php echo $errors['email']; ?></div>
+                        <?php endif; ?>
+
+                        <?php if (isset($errors['phone'])): ?>
+                            <div class="alert alert-danger"><?php echo $errors['phone']; ?></div>
+                        <?php endif; ?>
+
+                        <?php if (isset($message)): ?>
+                            <div class="alert alert-success"><?php echo $message; ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Inscription</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Register Modal -->
-<div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">S'identifier</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <form method="post" action="">
-                <div class="modal-body">
-                    <label for="first_name">Prénom</label>
-                    <input type="text" id="first_name" name="first_name" class="form-control" required>
-                    
-                    <label for="last_name">Nom</label>
-                    <input type="text" id="last_name" name="last_name" class="form-control" required>
-
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-
-                    <label for="phone">Téléphone</label>
-                    <input type="text" id="phone" name="phone" class="form-control" required>
-
-                    <label for="address">Adresse</label>
-                    <input type="text" id="address" name="address" class="form-control" required>
-
-                    <label for="postal_code">Code postal</label>
-                    <input type="text" id="postal_code" name="postal_code" class="form-control" required>
-
-                    <label for="city">Ville</label>
-                    <input type="text" id="city" name="city" class="form-control" required>
-
-                    <input type="hidden" name="register" value="1">
-
-                    <?php if (isset($errors['fields'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['fields']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($errors['email'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['email']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($errors['phone'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['phone']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($errors['password'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['password']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($message) && empty($errors)): ?>
-                        <div class="alert alert-success"><?php echo $message; ?></div>
-                    <?php endif; ?>
-
-                    <p>Déjà inscrit ?
-						<button type="button" class="btn btn-white" id="switchToLogin">Connectez-vous ici</button>
-					</p>
-										
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">S'inscrire</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 
 <!-- Welcome Modal -->
 <div class="modal fade welcome-modal" tabindex="-1" role="dialog" aria-labelledby="Welcome" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Bonjour</h5>
+                <h5 class="modal-title">Bienvenue</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -291,183 +284,74 @@ $result = mysqli_query($conn, $query);
 <?php endif; ?>
 
 </div>
-<section class="ftco-section ftco-cart">
-	<div class="container">
-        <div class="row">
-            <div class="col-md-12 ftco-animate">
-                <div class="cart-list">
-                    <table class="table">
-                        <thead class="thead-primary">
-                            <tr class="text-center">
-                                <th>&nbsp;</th>
-                                <th>&nbsp;</th>
-                                <th>Nom du produit</th>
-                                <th>Prix</th>
-                                <th>Quantité</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                                <tr class="text-center">
-                                    <td class="product-remove"><a href="#"><span class="ion-ios-close"></span></a></td>
-                                    
-                                    <td class="image-">
-                                        <div class="img" style="background-image:url(<?= htmlspecialchars($row['image_url']); ?>);"></div>
-                                    </td>
-                                    
-                                    <td class="product-name">
-                                        <h3><?= htmlspecialchars($row['name']); ?></h3>
-                                    </td>
-                                    
-                                    <td class="price">€<?= htmlspecialchars($row['price_per_unit']); ?></td>
-                                    
-                                    <td class="quantity">
-                                        <div class="input-group mb-3">
-                                            <input type="text" name="quantity" class="quantity form-control input-number" value="<?= htmlspecialchars($row['quantity']); ?>" min="1" max="100" readonly>
-                                        </div>
-                                    </td>
-                                    
-                                    <td class="total">€<?= htmlspecialchars($row['price_per_unit'] * $row['quantity']); ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Shipping Information -->
-            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-                <div class="cart-total mb-3">
-                    <h3>Livraison</h3>
-                    <p>Entrer votre adresse de Livraison</p>
-                    <form action="#" class="info">
-                        <div class="form-group">
-                            <label for="numero">Numero</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="Entrer le numero">
-                        </div>
-                        <div class="form-group">
-                            <label for="adresse">Adresse</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="Entrer l'adresse">
-                        </div>
-                        <div class="form-group">
-                            <label for="zipcode">Zip/Code Postal</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="Entrer le code postal">
-                        </div>
-                        <div class="form-group">
-                            <label for="region">Région</label>
-                            <input type="text" class="form-control text-left px-3" placeholder="Entrer la région">
-                        </div>
-                    </form>
-                </div>
-                <p><a href="checkout.html" class="btn btn-primary py-3 px-4">Estimate</a></p>
-            </div>
 
-            <!-- Cart Totals -->
-            <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-                <div class="cart-total mb-3">
-                    <h3>Total</h3>
-                    <p class="d-flex">
-                        <span>Sous-total</span>
-                        <span>€<?php 
-                            // Calculate subtotal
-                            $subtotal_query = "SELECT SUM(p.price_per_unit * oi.quantity) AS subtotal FROM order_items oi JOIN product p ON oi.product_id = p.product_id WHERE oi.order_id IN (SELECT MAX(order_id) FROM orders)";
-                            $subtotal_result = mysqli_query($conn, $subtotal_query);
-                            $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
-                            echo number_format($subtotal, 2);
-                        ?></span>
-                    </p>
-                    <p class="d-flex">
-                        <span>Livraison</span>
-                        <span>€0.00</span>
-                    </p>
-                    
-                    <hr>
-                    <p class="d-flex total-price">
-                        <span>Total</span>
-                        <span>€<?= number_format($subtotal, 2); ?></span>
-                    </p>
+
+    <section class="ftco-section ftco-cart">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="cart-list">
+                        <table class="table">
+                            <thead class="thead-primary">
+                                <tr class="text-center">
+                                    <th>&nbsp;</th>
+                                    <th>&nbsp;</th>
+                                    <th>Nom du produit</th>
+                                    <th>Prix</th>
+                                    <th>Quantité</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                                    <tr class="text-center">
+                                        <td class="product-remove">
+                                            <a href="?remove=<?= $row['product_id'] ?>"><span class="ion-ios-close"></span></a>
+                                        </td>
+                                        <td class="image-">
+                                            <div class="img" style="background-image:url(<?= htmlspecialchars($row['image_url']); ?>);"></div>
+                                        </td>
+                                        <td class="product-name">
+                                            <h3><?= htmlspecialchars($row['name']); ?></h3>
+                                        </td>
+                                        <td class="price">€<?= htmlspecialchars($row['price_per_unit']); ?></td>
+                                        <td class="quantity">
+                                            <div class="input-group mb-3">
+                                                <input type="text" name="quantity" class="quantity form-control input-number" value="<?= htmlspecialchars($row['quantity']); ?>" min="1" max="100" readonly>
+                                            </div>
+                                        </td>
+                                        <td class="total">€<?= htmlspecialchars($row['price_per_unit'] * $row['quantity']); ?></td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <p><a href="checkout.html" class="btn btn-primary py-3 px-4">Passer à la caisse</a></p>
+                
+                <!-- Cart Totals -->
+                <div class="col-lg-4 mt-5 cart-wrap">
+                    <div class="cart-total mb-3">
+                        <h3>Total</h3>
+                        <p class="d-flex">
+                            <span>Sous-total</span>
+                            <span>€<?= number_format($subtotal, 2); ?></span>
+                        </p>
+                        <!-- <p class="d-flex">
+                            <span>Livraison</span>
+                            <span>€0.00</span>
+                        </p> -->
+                        <hr>
+                        <p class="d-flex total-price">
+                            <span>Total</span>
+                            <span>€<?= number_format($subtotal, 2); ?></span>
+                        </p>
+                    </div>
+                    <p><a href="checkout.html" class="btn btn-primary py-3 px-4">Commander</a></p>
+                </div>
             </div>
         </div>
-    </div>
-    		</div>
-    		<div class="row justify-content-end">
-    			<!-- <div class="col-lg-4 mt-5 cart-wrap ftco-animate">
-    				<div class="cart-total mb-3">
-    					<h3>Coupon Code</h3>
-    					<p>Enter your coupon code if you have one</p>
-  						<form action="#" class="info">
-	              <div class="form-group">
-	              	<label for="">Coupon code</label>
-	                <input type="text" class="form-control text-left px-3" placeholder="">
-	              </div>
-	            </form>
-    				<
-		</section>
-
-    <footer class="ftco-footer ftco-section">
-		<div class="container">
-			<div class="row">
-				<div class="mouse">
-						  <a href="#" class="mouse-icon">
-							  <div class="mouse-wheel"><span class="ion-ios-arrow-up"></span></div>
-						  </a>
-					  </div>
-			</div>
-		  <div class="row mb-5">
-			<div class="col-md">
-			  <div class="ftco-footer-widget mb-4">
-				<h2 class="ftco-heading-2">Au Maraicher Des Flandres</h2>
-				<ul class="ftco-footer-social list-unstyled float-md-left float-lft mt-5">
-				  <li class="ftco-animate"><a href="#"><span class="icon-twitter"></span></a></li>
-				  <li class="ftco-animate"><a href="https://www.facebook.com/aumaraichersdesflandres/"><span class="icon-facebook"></span></a></li>
-				  <li class="ftco-animate"><a href="https://www.instagram.com/au_maraicher_des_flandres"><span class="icon-instagram"></span></a></li>
-				</ul>
-			  </div>
-			</div>
-			<div class="col-md">
-			  <div class="ftco-footer-widget mb-4 ml-md-5">
-				<h2 class="ftco-heading-2">Menu</h2>
-				<ul class="list-unstyled">
-				  <li><a href="#" class="py-2 d-block">Boutique</a></li>
-				  <li><a href="#" class="py-2 d-block">À propos</a></li>
-				  <li><a href="#" class="py-2 d-block">Journal</a></li>
-				  <li><a href="#" class="py-2 d-block">Contactez-nous</a></li></ul>
-			  </div>
-			</div>
-			<div class="col-md-4">
-			  <div class="ftco-footer-widget mb-4">
-				<h2 class="ftco-heading-2">Aide</h2>
-				<div class="d-flex">
-				  <ul class="list-unstyled mr-l-5 pr-l-3 mr-4">
-					<li><a href="#" class="py-2 d-block">Informations sur la livraison</a></li>
-					<li><a href="#" class="py-2 d-block">Retours &amp; Échanges</a></li>
-					<li><a href="#" class="py-2 d-block">Conditions générales</a></li>
-					<li><a href="#" class="py-2 d-block">Politique de confidentialité</a></li>
-				  </ul>
-				  <ul class="list-unstyled">
-					<li><a href="#" class="py-2 d-block">FAQ</a></li>
-					<li><a href="#" class="py-2 d-block">Contact</a></li>
-				  </ul>
-				</div>
-			  </div>
-			</div>
-			<div class="col-md">
-			  <div class="ftco-footer-widget mb-4">
-				<h2 class="ftco-heading-2">Vous avez des questions ?</h2>
-				<div class="block-23 mb-3">
-				  <ul>
-					<li><span class="icon icon-map-marker"></span><span class="text">252 Rue Jean Jaurès, Villeneuve-d'Ascq 59491, France				</span></li>
-					<li><a href="#"><span class="icon icon-phone"></span><span class="text">+33 3 20 72 47 33</span></a></li>
-					<li><a href="#"><span class="icon icon-envelope"></span><span class="text">aumaraicherdesflandres@gmail.com</span></a></li>
-				  </ul>
-				</div>
-			  </div>
-			</div>
-		</div>
-	</footer>
+    </section>
+    		
   <!-- loader -->
   <div id="ftco-loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/></svg></div>
 
@@ -525,6 +409,12 @@ $result = mysqli_query($conn, $query);
 		    
 		});
 	</script>
-    
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        <?php if ($showLoginModal): ?>
+          $('#loginModal').modal('show');
+        <?php endif; ?>
+      });
+    </script>
   </body>
 </html>
