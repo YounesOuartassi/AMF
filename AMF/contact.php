@@ -146,6 +146,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
         unset($_SESSION['errors']);
     }
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -153,7 +155,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>Au Maraicher Des Flandres</title>
-
+  <link rel="icon" href="./images/logo2.png" type="image/icon type">
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap" rel="stylesheet">
@@ -204,7 +206,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
     <div class="container">
-      <a class="navbar-brand" href="index.html">Au Maraicher Des Flandres</a>
+      <a class="navbar-brand" href="index.php">Au Maraicher Des Flandres</a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="oi oi-menu"></span> Menu
       </button>
@@ -390,7 +392,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
         <?php unset($_SESSION['errors']); ?>
     <?php endif; ?>
 
-
     <?php if (isset($_SESSION['registration_message'])): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?php echo $_SESSION['registration_message']; ?>
@@ -400,9 +401,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
         </button>
     </div>
     <?php unset($_SESSION['registration_message']); ?>
-<?php endif; ?>
+    <?php endif; ?>
 
-<?php if (isset($_SESSION['login_message'])): ?>
+    <?php if (isset($_SESSION['login_message'])): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?php echo $_SESSION['login_message']; ?>
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -410,9 +411,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
         </button>
     </div>
     <?php unset($_SESSION['login_message']); ?>
-<?php endif; ?>
+    <?php endif; ?>
+
 
 </div>
+
   <!-- Contact Section -->
   <section class="ftco-section contact-section bg-light">
     <div class="container">
@@ -439,15 +442,19 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
       <!-- Contact Form and Map -->
       <div class="row block-9">
         <div class="col-md-6 order-md-last d-flex">
-          <form action="./php/process_form.php" method="post" class="bg-white p-5 contact-form">
+          <form action="https://api.web3forms.com/submit" method="POST" class="bg-white p-5 contact-form">
+            <input type="hidden" name="access_key" value="d681eb48-2de6-4e54-9f3b-0470d57c0863">
+            <input type="hidden" name="redirect" value="http://localhost:3000/AMF/contact-success.php">
+            <input type="hidden" name="subject" value="Nouveau message de contact">
+            <input type="hidden" name="from_name" value="Message Contact">
             <div class="form-group">
-              <input type="text" name="name" class="form-control" placeholder="Votre Nom" required>
+              <input type="text" name="Nom" class="form-control" placeholder="Votre Nom" required>
             </div>
             <div class="form-group">
               <input type="email" name="email" class="form-control" placeholder="Votre Mail" required>
             </div>
             <div class="form-group">
-              <input type="text" name="subject" class="form-control" placeholder="Sujet" required>
+              <input type="text" name="Sujet" class="form-control" placeholder="Sujet" required>
             </div>
             <div class="form-group">
               <textarea name="message" id="" cols="30" rows="7" class="form-control" placeholder="Message" required></textarea>
@@ -463,8 +470,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
           <div id="map" class="bg-white"></div>
         </div>
       </div>
-    </div>
-  </section>
+
+
 
   <!-- Footer -->
   <footer class="ftco-footer ftco-section">

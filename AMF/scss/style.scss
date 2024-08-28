@@ -837,32 +837,35 @@ h1, h2, h3, h4, h5,
 		position: relative;
 	}
 }
-.product{
+.product {
 	display: block;
 	width: 100%;
 	margin-bottom: 30px;
 	position: relative;
 	@include transition(.3s);
-	border: 1px solid lighten($black,94%);
-	@include media-breakpoint-down(md){
+	border: 1px solid lighten($black, 94%);
+	@include media-breakpoint-down(md) {
 		margin-bottom: 30px;
 	}
-	.img-prod{
+
+	.img-prod {
 		position: relative;
 		display: block;
 		overflow: hidden;
-		.overlay{
+
+		.overlay {
 			position: absolute;
 			top: 0;
 			left: 0;
 			right: 0;
 			bottom: 0;
 			content: '';
-			opacity:0;
+			opacity: 0;
 			background: $primary;
 			@include transition(.3s);
 		}
-		span.status{
+
+		span.status {
 			position: absolute;
 			top: 0;
 			left: 0;
@@ -872,16 +875,18 @@ h1, h2, h3, h4, h5,
 			background: $primary;
 			font-size: 12px;
 		}
-		img{
-			-webkit-transform: scale(1.0);
-			-moz-transform: scale(1.0);
-			-ms-transform: scale(1.0);
-			-o-transform: scale(1.0);
-			transform: scale(1.0);
+
+		img {
+			width: 100%;
+			height: auto;
+			max-height: 500px; /* Ensures the image does not exceed this height */
+			object-fit: contain; /* Scales the image to fit the container without cropping */
+			object-position: center;
 			@include transition(.3s);
 		}
-		&:hover, &:focus{
-			img{
+
+		&:hover, &:focus {
+			img {
 				-webkit-transform: scale(1.1);
 				-moz-transform: scale(1.1);
 				-ms-transform: scale(1.1);
@@ -890,10 +895,16 @@ h1, h2, h3, h4, h5,
 			}
 		}
 	}
-	.img{
+
+	.img {
 		display: block;
-		height: 500px;
+		width: 100%;
+		max-height: 500px; /* Restricts the height of the image */
+		background-size: contain; /* Ensures the image scales to fit within its container */
+		background-position: center;
+		background-repeat: no-repeat;
 	}
+
 	.icon{
 		width: 60px;
 		height: 60px;

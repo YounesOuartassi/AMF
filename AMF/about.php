@@ -171,6 +171,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 
     <link rel="stylesheet" href="css/bootstrap-datepicker.css">
     <link rel="stylesheet" href="css/jquery.timepicker.css">
+    <link rel="icon" href="./images/logo2.png" type="image/icon type">
 
     
     <link rel="stylesheet" href="css/flaticon.css">

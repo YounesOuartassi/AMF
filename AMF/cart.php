@@ -17,6 +17,7 @@ if ($user_id == 0) {
     $showLoginModal = true;
     $loginMessage = "Veuillez vous connecter pour voir votre panier";
 }
+
 // Handle removing an item from the cart
 if (isset($_GET['remove'])) {
     $item_id = intval($_GET['remove']);
@@ -47,15 +48,98 @@ $subtotal_query = "
 ";
 $subtotal_result = mysqli_query($conn, $subtotal_query);
 $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
-?>
 
+// Get user's delivery address
+$address_query = "
+    SELECT address, postal_code, city
+    FROM users
+    WHERE user_id = $user_id
+";
+$address_result = mysqli_query($conn, $address_query);
+$address = mysqli_fetch_assoc($address_result);
+
+// Handle address update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_address'])) {
+    $new_address = mysqli_real_escape_string($conn, $_POST['address']);
+    $new_postal_code = mysqli_real_escape_string($conn, $_POST['postal_code']);
+    $new_city = mysqli_real_escape_string($conn, $_POST['city']);
+
+    if (!empty($new_address) && !empty($new_postal_code) && !empty($new_city)) {
+        $update_address_query = "
+            UPDATE users
+            SET address = '$new_address', postal_code = '$new_postal_code', city = '$new_city'
+            WHERE user_id = $user_id
+        ";
+        if (mysqli_query($conn, $update_address_query)) {
+            $message = 'Adresse mise à jour avec succès.';
+            $_SESSION['update_message'] = $message;
+        } else {
+            $_SESSION['update_message'] = 'Une erreur est survenue lors de la mise à jour.';
+        }
+    } else {
+        $_SESSION['update_message'] = 'Tous les champs sont obligatoires.';
+    }
+
+    // Refresh the page to show updated address
+    header("Location: cart.php");
+    exit;
+}
+// Handle checkout and send order email
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
+    // Retrieve updated cart data
+    $order_items = [];
+    $result = mysqli_query($conn, $query); // Re-run query to get cart items
+    
+    while ($row = mysqli_fetch_assoc($result)) {
+        $order_items[] = [
+            'name' => $row['name'],
+            'quantity' => $row['quantity'],
+            'total' => $row['price_per_unit'] * $row['quantity']
+        ];
+    }
+
+    // Construct the email content
+    $to = "oiyounes2.0@gmail.com";
+    $subject = "Nouvelle commande de {$_SESSION['first_name']} {$_SESSION['last_name']}";
+    $message = "Nouvelle commande reçue :\r\n\r\n";
+    foreach ($order_items as $item) {
+        $message .= "{$item['name']} - Quantité: {$item['quantity']} - Total: €{$item['total']}\r\n";
+    }
+    $message .= "\r\nSous-total: €" . number_format($subtotal, 2);
+    $message .= "\r\nAdresse de livraison: {$address['address']}, {$address['postal_code']} {$address['city']}";
+
+    // Send the email and handle success or failure
+    if (mail($to, $subject, $message)) {
+        // Clear the cart
+        $clear_cart_query = "DELETE FROM order_items WHERE order_id = (SELECT MAX(order_id) FROM orders WHERE user_id = $user_id)";
+        mysqli_query($conn, $clear_cart_query);
+
+        // Set success message
+        $_SESSION['checkout_message'] = 'Votre commande a été effectuée avec succès.';
+
+        // Refresh to display success message
+        header("Location: cart.php");
+        exit;
+    } else {
+        // Log the error
+        error_log("Mail sending failed: " . error_get_last()['message']);
+        $_SESSION['checkout_message'] = 'Une erreur est survenue lors de l\'envoi de votre commande.';
+        
+        // Refresh to display failure message
+        header("Location: cart.php");
+        exit;
+    }
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <title>Au Maraicher Des Flandres</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    
+    <link rel="icon" href="./images/logo2.png" type="image/icon type">
+
     <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Amatic+SC:400,700&display=swap" rel="stylesheet">
@@ -82,8 +166,8 @@ $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
 	    <div class="container">
-				<a class="navbar-brand" href="index.html">Au Maraicher Des Flandres</a>
-				<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
+        <a class="navbar-brand" href="index.php">Au Maraicher Des Flandres</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
 					<span class="oi oi-menu"></span> Menu
 				</button>
 
@@ -91,8 +175,8 @@ $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
                 <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
-                <li class="nav-item"><a href="about.html" class="nav-link">à propos</a></li>
-                <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
+                <li class="nav-item"><a href="about.php" class="nav-link">à propos</a></li>
+                <li class="nav-item"><a href="contact.php" class="nav-link">Contact</a></li>
                 <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
 
                 <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
@@ -111,7 +195,18 @@ $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
         </div>
       </div>
     </div>
-    
+    <!-- Display Checkout Message -->
+    <div class="container mt-4">
+
+    <?php if (isset($_SESSION['checkout_message'])): ?>
+
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= $_SESSION['checkout_message']; ?>
+        </div>
+        <?php unset($_SESSION['checkout_message']); ?>
+    <?php endif; ?>
+    </div>
+
 <!-- Login Modal -->
 <div class="modal fade conn" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -218,6 +313,40 @@ $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
         </div>
     </div>
 
+<!-- Update Address Modal -->
+<div class="modal fade add" tabindex="-1" role="dialog" aria-labelledby="updateAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateAddressModalLabel">Changer l'adresse de Livraison</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" class="info">
+                    <div class="form-group">
+                        <label for="address">Adresse:</label>
+                        <input type="text" name="address" class="form-control text-left px-3" value="<?php echo htmlspecialchars($address['address']); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postal_code">Code Postal:</label>
+                        <input type="number" name="postal_code" class="form-control text-left px-3" value="<?php echo htmlspecialchars($address['postal_code']); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="city">Ville:</label>
+                        <input type="text" name="city" class="form-control text-left px-3" value="<?php echo htmlspecialchars($address['city']); ?>" required>
+                    </div>
+                    <div class="modal-footer">
+                    <input type="hidden" name="update_address" value="1">
+                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Welcome Modal -->
 <div class="modal fade welcome-modal" tabindex="-1" role="dialog" aria-labelledby="Welcome" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -308,9 +437,10 @@ $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
                                         <td class="product-remove">
                                             <a href="?remove=<?= $row['product_id'] ?>"><span class="ion-ios-close"></span></a>
                                         </td>
-                                        <td class="image-">
+                                        <td class="image-prod">
                                             <div class="img" style="background-image:url(<?= htmlspecialchars($row['image_url']); ?>);"></div>
                                         </td>
+
                                         <td class="product-name">
                                             <h3><?= htmlspecialchars($row['name']); ?></h3>
                                         </td>
@@ -328,28 +458,55 @@ $subtotal = mysqli_fetch_assoc($subtotal_result)['subtotal'];
                     </div>
                 </div>
                 
-                <!-- Cart Totals -->
-                <div class="col-lg-4 mt-5 cart-wrap">
+                <!-- Cart Totals and Address -->
+                <div class="col-lg-5 mt-5 cart-wrap">
+    <div class="cart-wrap-inner d-flex">
+        <div class="cart-total mb-3">
+            <h3>Total</h3>
+            <p class="d-flex">
+                <span>Sous-total</span>
+                <span>€<?= number_format($subtotal, 2); ?></span>
+            </p>
+
+            <!-- Uncomment this if you want to show shipping cost -->
+            <!-- <p class="d-flex">
+                <span>Livraison</span>
+                <span>€0.00</span>
+            </p> -->
+            <hr>
+            <p class="d-flex total-price">
+                <span>Total</span>
+                <span>€<?= number_format($subtotal, 2); ?></span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Checkout Button -->
+    <form action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="d681eb48-2de6-4e54-9f3b-0470d57c0863">
+
+        <button type="submit" name="checkout" class="btn btn-primary py-3 px-4">Commander</button>
+    </form>
+    </div>
+
+    
+
+        <!-- User Address -->
+        <div class="col-lg-5 mt-5 cart-wrap">
+                <div class="cart-wrap-inner d-flex">
                     <div class="cart-total mb-3">
-                        <h3>Total</h3>
-                        <p class="d-flex">
-                            <span>Sous-total</span>
-                            <span>€<?= number_format($subtotal, 2); ?></span>
-                        </p>
-                        <!-- <p class="d-flex">
-                            <span>Livraison</span>
-                            <span>€0.00</span>
-                        </p> -->
-                        <hr>
-                        <p class="d-flex total-price">
-                            <span>Total</span>
-                            <span>€<?= number_format($subtotal, 2); ?></span>
-                        </p>
+                        <div class="address-info mb-3">
+                            <h4>Adresse de Livraison</h4>
+                            <p><?= htmlspecialchars($address['address']); ?><br>
+                               <?= htmlspecialchars($address['postal_code']); ?> <?= htmlspecialchars($address['city']); ?>
+                            </p>
+                            <button type="button" class="btn btn-secondary py-2 px-4" data-toggle="modal" data-target=".add">Changer l'adresse</button>
+                        </div>
                     </div>
-                    <p><a href="checkout.html" class="btn btn-primary py-3 px-4">Commander</a></p>
                 </div>
             </div>
-        </div>
+        
+                
     </section>
     		
   <!-- loader -->
