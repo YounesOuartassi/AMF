@@ -204,25 +204,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
-    <div class="container">
-      <a class="navbar-brand" href="index.php">Au Maraicher Des Flandres</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="oi oi-menu"></span> Menu
-      </button>
-      <div class="collapse navbar-collapse" id="ftco-nav">
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item active"><a href="index.php" class="nav-link">Acceuil</a></li>
-            <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
-            <li class="nav-item"><a href="about.php" class="nav-link">à propos</a></li>
-            <li class="nav-item"><a href="contact.php" class="nav-link">Contact</a></li>
-            <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
+  <?php include 'components/navbar.php'; ?>
 
-            <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span>[0]</a></li>
-        </ul>
-    </div>
-    </div>
-  </nav>
 
   <!-- Hero Section -->
   <div class="hero-wrap hero-bread" style="background-image: url('images/bg_1.jpg');">
@@ -237,184 +220,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
   </div>
 
   
-
 <!-- Login Modal -->
-<div class="modal fade conn" tabindex="-1" role="dialog" aria-labelledby="connexion" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Se Connecter</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form method="post" action="">
-                    <label for="email_login">Email:</label>
-                    <input type="email" id="email_login" name="email" class="form-control" required>
-
-                    <label for="password_login">Mot de passe:</label>
-                    <input type="password" id="password_login" name="password" class="form-control" required>
-
-                    <input type="hidden" name="login" value="1">
-
-                    <?php if (isset($errors['login'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['login']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($message) && empty($errors)): ?>
-                        <div class="alert alert-success"><?php echo $message; ?></div>
-                    <?php endif; ?>
-
-                    <p>Vous n'avez pas de compte ?
-                        <button type="button" class="btn btn-white" data-toggle="modal" data-target=".iden">Inscrivez-vous ici</button></p>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">Connexion</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
+<?php include 'modals/login.php'; ?>
 <!-- Register Modal -->
-<div class="modal fade iden" tabindex="-1" role="dialog" aria-labelledby="identification" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">S'identifier</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <form method="post" action="">
-                <div class="modal-body">
-                    <label for="first_name">Prénom</label>
-                    <input type="text" id="first_name" name="first_name" class="form-control" required>
-                    
-                    <label for="last_name">Nom</label>
-                    <input type="text" id="last_name" name="last_name" class="form-control" required>
-
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-
-                    <label for="phone">Téléphone</label>
-                    <input type="text" id="phone" name="phone" class="form-control" required>
-
-                    <label for="address">Adresse</label>
-                    <input type="text" id="address" name="address" class="form-control" required>
-
-                    <label for="postal_code">Code postal</label>
-                    <input type="text" id="postal_code" name="postal_code" class="form-control" required>
-
-                    <label for="city">Ville</label>
-                    <input type="text" id="city" name="city" class="form-control" required>
-
-                    <input type="hidden" name="register" value="1">
-
-                    <?php if (isset($errors['fields'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['fields']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($errors['email'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['email']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($errors['phone'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['phone']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($errors['password'])): ?>
-                        <div class="alert alert-danger"><?php echo $errors['password']; ?></div>
-                    <?php endif; ?>
-
-                    <?php if (isset($message) && empty($errors)): ?>
-                        <div class="alert alert-success"><?php echo $message; ?></div>
-                    <?php endif; ?>
-
-                    <p>Déjà inscrit ?
-						<button type="button" class="btn btn-white" id="switchToLogin">Connectez-vous ici</button>
-					</p>
-										
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">S'inscrire</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
+<?php include 'modals/register.php'; ?>
 <!-- Welcome Modal -->
-<div class="modal fade welcome-modal" tabindex="-1" role="dialog" aria-labelledby="Welcome" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bonjour</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p>Bonjour, <span class="font-weight-bold text-primary"><?php echo htmlspecialchars($_SESSION['first_name']); ?></span> !</p>
-                <p>Merci de vous être connecté</p>
-
-            </div>
-            <div class="modal-footer">
-                <form action="logout.php" method="post">
-                    <button type="submit" class="btn btn-danger">Se déconnecter</button>
-                </form>
-                <a href="cart.php" class="btn btn-primary">Voir votre panier</a>
-                </div>
-        </div>
-    </div>
-</div>
-
+<?php include 'modals/welcome.php'; ?>
 <!-- Display Alerts -->
-<div class="container mt-4">
-    <?php if (isset($_SESSION['errors'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php foreach ($_SESSION['errors'] as $error): ?>
-                <?php echo $error . "<br>"; ?>
-            <?php endforeach; ?>
-            <!-- Trigger the correct modal based on the error context -->
-            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
-                Cliquez ici pour corriger les erreurs
-            </button>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['errors']); ?>
-    <?php endif; ?>
+<?php include 'modals/alerts.php'; ?>
 
-    <?php if (isset($_SESSION['registration_message'])): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <?php echo $_SESSION['registration_message']; ?>
-        <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
-    <?php unset($_SESSION['registration_message']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['login_message'])): ?>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <?php echo $_SESSION['login_message']; ?>
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </div>
-    <?php unset($_SESSION['login_message']); ?>
-    <?php endif; ?>
-
-
-</div>
 
   <!-- Contact Section -->
   <section class="ftco-section contact-section bg-light">
@@ -474,69 +288,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) {
 
 
   <!-- Footer -->
-  <footer class="ftco-footer ftco-section">
-    <div class="container">
-      <div class="row">
-        <div class="mouse">
-          <a href="#" class="mouse-icon">
-            <div class="mouse-wheel"><span class="ion-ios-arrow-up"></span></div>
-          </a>
-        </div>
-      </div>
-      <div class="row mb-5">
-        <div class="col-md">
-          <div class="ftco-footer-widget mb-4">
-            <h2 class="ftco-heading-2">Au Maraicher Des Flandres</h2>
-            <ul class="ftco-footer-social list-unstyled float-md-left float-lft mt-5">
-              <li class="ftco-animate"><a href="#"><span class="icon-twitter"></span></a></li>
-              <li class="ftco-animate"><a href="https://www.facebook.com/aumaraichersdesflandres/"><span class="icon-facebook"></span></a></li>
-              <li class="ftco-animate"><a href="https://www.instagram.com/au_maraicher_des_flandres"><span class="icon-instagram"></span></a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="col-md">
-          <div class="ftco-footer-widget mb-4 ml-md-5">
-            <h2 class="ftco-heading-2">Menu</h2>
-            <ul class="list-unstyled">
-              <li><a href="#" class="py-2 d-block">Boutique</a></li>
-              <li><a href="#" class="py-2 d-block">À propos</a></li>
-              <li><a href="#" class="py-2 d-block">Journal</a></li>
-              <li><a href="#" class="py-2 d-block">Contactez-nous</a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="ftco-footer-widget mb-4">
-            <h2 class="ftco-heading-2">Aide</h2>
-            <div class="d-flex">
-              <ul class="list-unstyled mr-l-5 pr-l-3 mr-4">
-                <li><a href="#" class="py-2 d-block">Informations sur la livraison</a></li>
-                <li><a href="#" class="py-2 d-block">Retours & Échanges</a></li>
-                <li><a href="#" class="py-2 d-block">Conditions générales</a></li>
-                <li><a href="#" class="py-2 d-block">Politique de confidentialité</a></li>
-              </ul>
-              <ul class="list-unstyled">
-                <li><a href="#" class="py-2 d-block">FAQ</a></li>
-                <li><a href="#" class="py-2 d-block">Contact</a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        <div class="col-md">
-          <div class="ftco-footer-widget mb-4">
-            <h2 class="ftco-heading-2">Vous avez des questions ?</h2>
-            <div class="block-23 mb-3">
-              <ul>
-                <li><span class="icon icon-map-marker"></span><span class="text">252 Rue Jean Jaurès, Villeneuve-d'Ascq 59491, France</span></li>
-                <li><a href="#"><span class="icon icon-phone"></span><span class="text">+33 3 20 72 47 33</span></a></li>
-                <li><a href="#"><span class="icon icon-envelope"></span><span class="text">aumaraicherdesflandres@gmail.com</span></a></li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </footer>
+  <?php include 'components/footer.php'; ?>
 
   <!-- Loader -->
   <div id="ftco-loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/></svg></div>

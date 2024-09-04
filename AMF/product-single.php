@@ -116,25 +116,15 @@ $conn->close();
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
-    <div class="container">
-    <a class="navbar-brand" href="index.php">Au Maraicher Des Flandres</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="oi oi-menu"></span> Menu
-        </button>
-
-        <div class="collapse navbar-collapse" id="ftco-nav">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item active"><a href="index.html" class="nav-link">Accueil</a></li>
-                <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
-                <li class="nav-item"><a href="about.html" class="nav-link">À propos</a></li>
-                <li class="nav-item"><a href="contact.html" class="nav-link">Contact</a></li>
-                <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-shopping_cart"></span></a></li>
-                <li class="nav-item cta cta-colored"><a href="cart.php" class="nav-link"><span class="icon-users"></span></a></li>
-            </ul>
-        </div>
-    </div>
-</nav>
+<?php include 'components/navbar.php'; ?>
+<!-- Login Modal -->
+<?php include 'modals/login.php'; ?>
+<!-- Register Modal -->
+<?php include 'modals/register.php'; ?>
+<!-- Welcome Modal -->
+<?php include 'modals/welcome.php'; ?>
+<!-- Display Alerts -->
+<?php include 'modals/alerts.php'; ?>
 
 <div class="hero-wrap hero-bread" style="background-image: url('images/bg_1.jpg');">
     <div class="container">
@@ -184,52 +174,8 @@ $conn->close();
     </div>
 </section>
 
-<footer class="ftco-footer ftco-section">
-    <div class="container">
-        <div class="row">
-            <div class="mouse">
-                <a href="#" class="mouse-icon">
-                    <div class="mouse-wheel"><span class="ion-ios-arrow-up"></span></div>
-                </a>
-            </div>
-        </div>
-        <div class="row mb-5">
-            <div class="col-md">
-                <div class="ftco-footer-widget mb-4">
-                    <h2 class="ftco-heading-2">Au Maraicher Des Flandres</h2>
-                    <ul class="ftco-footer-social list-unstyled float-md-left float-lft mt-5">
-                        <li class="ftco-animate"><a href="#"><span class="icon-twitter"></span></a></li>
-                        <li class="ftco-animate"><a href="https://www.facebook.com/aumaraichersdesflandres/"><span class="icon-facebook"></span></a></li>
-                        <li class="ftco-animate"><a href="https://www.instagram.com/au_maraicher_des_flandres"><span class="icon-instagram"></span></a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-md">
-                <div class="ftco-footer-widget mb-4 ml-md-5">
-                    <h2 class="ftco-heading-2">Menu</h2>
-                    <ul class="list-unstyled">
-                        <li><a href="#" class="py-2 d-block">Boutique</a></li>
-                        <li><a href="#" class="py-2 d-block">À propos</a></li>
-                        <li><a href="#" class="py-2 d-block">Journal</a></li>
-                        <li><a href="#" class="py-2 d-block">Contactez-nous</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="ftco-footer-widget mb-4">
-                    <h2 class="ftco-heading-2">Aide</h2>
-                    <div class="d-flex">
-                        <ul class="list-unstyled">
-                            <li><a href="#" class="py-2 d-block">Politique de confidentialité</a></li>
-                            <li><a href="#" class="py-2 d-block">Politique de retour</a></li>
-                            <li><a href="#" class="py-2 d-block">Expédition</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</footer>
+<?php include 'components/footer.php'; ?>
+
 
 <!-- loader -->
 <div id="ftco-loader" class="show fullscreen">
