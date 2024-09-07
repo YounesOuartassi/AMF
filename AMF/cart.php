@@ -13,6 +13,7 @@ include('db_connect.php');
 // Start session
 session_start();
 
+
 // Initialize a flag to show the modal
 $showLoginModal = false;
 $loginMessage = "";
@@ -112,7 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_address'])) {
     header("Location: cart.php");
     exit;
 }
-
 // Handle checkout and send order email
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
     // Retrieve updated cart data
@@ -127,25 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         ];
     }
 
-    // Insert new order with status 'ordered'
-    $insert_order_query = "
-        INSERT INTO orders (user_id, status, total_amount, order_date)
-        VALUES ($user_id, 'ordered', $subtotal, NOW())
+    // Update existing order status to 'ordered'
+    $update_order_query = "
+        UPDATE orders
+        SET status = 'ordered', total_amount = $subtotal, order_date = NOW()
+        WHERE user_id = $user_id AND status = 'cart'
     ";
-    if (mysqli_query($conn, $insert_order_query)) {
-        $order_id = mysqli_insert_id($conn);
-
-        // Copy items from the cart to the new order
-        foreach ($order_items as $item) {
-            $insert_order_items_query = "
-                INSERT INTO order_items (order_id, product_id, quantity, unit)
-                SELECT $order_id, product_id, quantity, unit
-                FROM order_items
-                WHERE order_id = (SELECT MAX(order_id) FROM orders WHERE user_id = $user_id AND status = 'cart')
-            ";
-            mysqli_query($conn, $insert_order_items_query);
-        }
-
+    if (mysqli_query($conn, $update_order_query)) {
         // Clear the cart
         $clear_cart_query = "DELETE FROM order_items WHERE order_id = (SELECT MAX(order_id) FROM orders WHERE user_id = $user_id AND status = 'cart')";
         mysqli_query($conn, $clear_cart_query);
@@ -188,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         exit;
     } else {
         // Log the error
-        error_log("Order insertion failed: " . mysqli_error($conn));
+        error_log("Order update failed: " . mysqli_error($conn));
         $_SESSION['checkout_message'] = 'Une erreur est survenue lors de la passation de la commande.';
         
         // Refresh to display failure message
@@ -196,6 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
         exit;
     }
 }
+
+include 'modals/modals_php.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -404,7 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
       </div>
     </div>
   </div>
-
+  <?php include 'components/footer.php'; ?>
   <script src="js/jquery.min.js"></script>
   <script src="js/jquery-migrate-3.0.1.min.js"></script>
   <script src="js/popper.min.js"></script>

@@ -1,26 +1,33 @@
-
 <?php
 session_start();
 include '../db_connect.php'; // Database connection
 
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin'] || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
+    // Redirect to the home page or show an error message
+    header('Location: ../index.php'); // Adjust the path as necessary
+    exit();
+}
 
-// Handle order deletion when "Commande est faite" is clicked
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+// Handle order status update when "Commande est faite" is clicked
+if (isset($_GET['action']) && $_GET['action'] === 'update' && isset($_GET['id'])) {
     $order_id = intval($_GET['id']);
-    // Delete order items first due to foreign key constraints
-    $deleteItemsSql = "DELETE FROM order_items WHERE order_id = ?";
-    $stmt = $conn->prepare($deleteItemsSql);
+    
+    // Update order status to 'delivered'
+    $updateOrderSql = "UPDATE orders SET status = 'delivered' WHERE order_id = ?";
+    $stmt = $conn->prepare($updateOrderSql);
     $stmt->bind_param("i", $order_id);
-    $stmt->execute();
+    
+    if ($stmt->execute()) {
+        // Success message
+        $_SESSION['status_message'] = ['type' => 'success', 'text' => 'Commande marquée comme livrée avec succès.'];
+    } else {
+        // Error message
+        $_SESSION['status_message'] = ['type' => 'error', 'text' => 'Erreur lors de la mise à jour du statut de la commande.'];
+    }
+    
     $stmt->close();
-
-    // Delete the order itself
-    $deleteOrderSql = "DELETE FROM orders WHERE order_id = ?";
-    $stmt = $conn->prepare($deleteOrderSql);
-    $stmt->bind_param("i", $order_id);
-    $stmt->execute();
-    $stmt->close();
-
+    
     // Redirect back to orders page
     header("Location: orders.php");
     exit;
@@ -39,7 +46,6 @@ if ($result->num_rows > 0) {
         $orders[] = $row;
     }
 }
-
 
 ?>
 
@@ -72,104 +78,105 @@ if ($result->num_rows > 0) {
     <link rel="stylesheet" href="../css/flaticon.css">
     <link rel="stylesheet" href="../css/icomoon.css">
     <link rel="stylesheet" href="../css/style.css">
+
+    <!-- Custom CSS for status messages -->
+    <style>
+        .status-message.success {
+            color: green;
+        }
+        .status-message.error {
+            color: red;
+        }
+    </style>
 </head>
 <body>
 
-
 <?php include 'admin_navbar.php'; ?>
-
 <div class="container my-5">
     <h2>Commandes</h2>
-    <?php foreach ($orders as $order): ?>
-        <div class="card mb-4 position-relative">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5>Commande ID: <?php echo $order['order_id']; ?> | Date: <?php echo $order['order_date']; ?></h5>
-                    <p class="mb-1"><strong>Client:</strong> <?php echo htmlspecialchars($order['first_name']) . ' ' . htmlspecialchars($order['last_name']); ?> | <strong>Email:</strong> <?php echo htmlspecialchars($order['email']); ?></p>
-                    <p class="mb-1"><strong>Téléphone:</strong> <?php echo htmlspecialchars($order['phone']); ?> | <strong>Adresse:</strong> <?php echo htmlspecialchars($order['address']) . ', ' . htmlspecialchars($order['postal_code']) . ' ' . htmlspecialchars($order['city']); ?></p>
-                    <p class="mb-1"><strong>Total:</strong> €<?php echo number_format($order['total_amount'], 2); ?></p>
-                </div>
-                <!-- Delete button to mark order as done -->
-                <a href="orders.php?action=delete&id=<?php echo $order['order_id']; ?>" class="btn btn-success" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette commande ?');">
-                    Commande est faite
-                </a>
-            </div>
-            <div class="card-body">
-                <h6>Produits Commandés:</h6>
-                <div class="row">
-                    <?php
-                    // Fetch products for each order
-                    $orderItemsSql = "SELECT oi.quantity, oi.unit, p.name, p.price_per_unit, p.image_url
-                                      FROM order_items oi
-                                      JOIN product p ON oi.product_id = p.product_id
-                                      WHERE oi.order_id = ?";
-                    $stmt = $conn->prepare($orderItemsSql);
-                    $stmt->bind_param("i", $order['order_id']);
-                    $stmt->execute();
-                    $orderItemsResult = $stmt->get_result();
-
-                    while ($item = $orderItemsResult->fetch_assoc()):
-                    ?>
-                        <div class="col-md-6 col-lg-3 d-flex justify-content-center">
-                            <div class="product-card text-center p-2">
-                                <img src="../<?php echo htmlspecialchars($item['image_url']); ?>" alt="<?php echo htmlspecialchars($item['name']); ?>" class="img-fluid mb-2" style="width: 120px; height: 120px; object-fit: cover;">
-                                <h5 class="product-name"><?php echo htmlspecialchars($item['name']); ?></h5>
-                                <p class="product-unit">Quantité: <?php echo $item['quantity'] . ' ' . htmlspecialchars($item['unit']); ?></p>
-                                <p class="product-price">Prix Unitaire: €<?php echo number_format($item['price_per_unit'], 2); ?></p>
-                            </div>
-                        </div>
-                    <?php endwhile; ?>
-                    <?php $stmt->close(); ?>
-                </div>
-            </div>
+    
+    <?php if (isset($_SESSION['status_message'])): ?>
+        <div class="alert status-message <?php echo htmlspecialchars($_SESSION['status_message']['type']); ?>">
+            <?php echo htmlspecialchars($_SESSION['status_message']['text']); ?>
         </div>
-    <?php endforeach; ?>
+        <?php unset($_SESSION['status_message']); ?>
+    <?php endif; ?>
+    
+    <?php if (empty($orders)): ?>
+        <div class="alert alert-info">
+            Vous n'avez aucune commande.
+        </div>
+    <?php else: ?>
+        <?php foreach ($orders as $order): ?>
+            <div class="card mb-4 position-relative">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5>Commande ID: <?php echo $order['order_id']; ?> | Date: <?php echo $order['order_date']; ?></h5>
+                        <p class="mb-1"><strong>Client:</strong> <?php echo htmlspecialchars($order['first_name']) . ' ' . htmlspecialchars($order['last_name']); ?> | <strong>Email:</strong> <?php echo htmlspecialchars($order['email']); ?></p>
+                        <p class="mb-1"><strong>Téléphone:</strong> <?php echo htmlspecialchars($order['phone']); ?> | <strong>Adresse:</strong> <?php echo htmlspecialchars($order['address']) . ', ' . htmlspecialchars($order['postal_code']) . ' ' . htmlspecialchars($order['city']); ?></p>
+                        <p class="mb-1"><strong>Total:</strong> €<?php echo number_format($order['total_amount'], 2); ?></p>
+                    </div>
+                    <!-- Update status to delivered -->
+                    <a href="orders.php?action=update&id=<?php echo $order['order_id']; ?>" class="btn btn-success" onclick="return confirm('Êtes-vous sûr de vouloir marquer cette commande comme livrée ?');">
+                        Commande est faite
+                    </a>
+                </div>
+                <div class="card-body">
+                    <h6>Produits Commandés:</h6>
+                    <div class="row">
+                        <?php
+                        // Fetch products for each order
+                        $orderItemsSql = "SELECT p.name, oi.quantity, oi.unit, p.price_per_unit, p.image_url
+                                          FROM order_items oi
+                                          JOIN product p ON oi.product_id = p.product_id
+                                          WHERE oi.order_id = ?
+                                          GROUP BY p.product_id, oi.unit";
+                        $stmt = $conn->prepare($orderItemsSql);
+                        $stmt->bind_param("i", $order['order_id']);
+                        $stmt->execute();
+                        $orderItemsResult = $stmt->get_result();
+
+                        $products = [];
+                        while ($item = $orderItemsResult->fetch_assoc()) {
+                            $product_id = $item['name'];
+                            if (!isset($products[$product_id])) {
+                                $products[$product_id] = [
+                                    'name' => $item['name'],
+                                    'quantity' => 0,
+                                    'unit' => $item['unit'],
+                                    'price_per_unit' => $item['price_per_unit'],
+                                    'image_url' => $item['image_url']
+                                ];
+                            }
+                            $products[$product_id]['quantity'] += $item['quantity'];
+                        }
+
+                        foreach ($products as $product):
+                        ?>
+                            <div class="col-md-6 col-lg-3 d-flex justify-content-center">
+                                <div class="product-card text-center p-2">
+                                    <img src="../<?php echo htmlspecialchars($product['image_url']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" class="img-fluid mb-2" style="width: 120px; height: 120px; object-fit: cover;">
+                                    <h5 class="product-name"><?php echo htmlspecialchars($product['name']); ?></h5>
+                                    <p class="product-quantity">Quantité: <?php echo $product['quantity']; ?></p>
+                                    <p class="product-unit">Unité: <?php echo htmlspecialchars($product['unit']); ?></p>
+                                    <p class="product-price">Prix Unitaire: €<?php echo number_format($product['price_per_unit'], 2); ?></p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php $stmt->close(); ?>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
 </div>
+
 <!-- Login Modal -->
 <?php include '../modals/login.php'; ?>
 <!-- Register Modal -->
 <?php include '../modals/register.php'; ?>
 <!-- Welcome Modal -->
 <?php include '../modals/admin_welcome.php'; ?>
-
-<div class="container mt-4">
-    <?php if (isset($_SESSION['errors'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php foreach ($_SESSION['errors'] as $error): ?>
-                <?php echo $error . "<br>"; ?>
-            <?php endforeach; ?>
-            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
-                Cliquez ici pour corriger les erreurs
-            </button>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['errors']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['registration_message'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo $_SESSION['registration_message']; ?>
-            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['registration_message']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['login_message'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo $_SESSION['login_message']; ?>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['login_message']); ?>
-    <?php endif; ?>
-</div>
-
 
 <?php include '../components/footer.php'; ?>
 
@@ -182,7 +189,6 @@ if ($result->num_rows > 0) {
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
 <script src="../js/jquery.min.js"></script>
 <script src="../js/jquery-migrate-3.0.1.min.js"></script>
 <script src="../js/popper.min.js"></script>

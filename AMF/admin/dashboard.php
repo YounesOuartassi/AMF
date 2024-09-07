@@ -1,215 +1,212 @@
 <?php
 // Include database configuration
-include('../db_connect.php'); // Ensure this file contains your database connection settings
+include('../db_connect.php');
 
 session_start();
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin'] || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
+    // Redirect to the home page or show an error message
+    header('Location: ../index.php');
+    exit();
+}
 
+// Fetch data for visualizations
+$orders_today_query = "SELECT COUNT(*) AS count FROM orders WHERE DATE(order_date) = CURDATE()";
+$orders_today_result = $conn->query($orders_today_query);
+$orders_today_count = $orders_today_result->fetch_assoc()['count'];
 
+$orders_total_query = "SELECT COUNT(*) AS count FROM orders";
+$orders_total_result = $conn->query($orders_total_query);
+$orders_total_count = $orders_total_result->fetch_assoc()['count'];
 
+$sales_total_query = "SELECT SUM(total_amount) AS total FROM orders";
+$sales_total_result = $conn->query($sales_total_query);
+$sales_total_amount = $sales_total_result->fetch_assoc()['total'];
+
+$products_total_query = "SELECT COUNT(*) AS count FROM product";
+$products_total_result = $conn->query($products_total_query);
+$products_total_count = $products_total_result->fetch_assoc()['count'];
+
+$category_counts_query = "
+    SELECT c.category_name, COUNT(p.product_id) AS count 
+    FROM categories c
+    LEFT JOIN product p ON c.category_id = p.category_id
+    GROUP BY c.category_name
+";
+$category_counts_result = $conn->query($category_counts_query);
+$category_counts = [];
+while ($row = $category_counts_result->fetch_assoc()) {
+    $category_counts[] = $row;
+}
+
+$order_status_counts_query = "
+    SELECT status, COUNT(*) AS count 
+    FROM orders 
+    GROUP BY status
+";
+$order_status_counts_result = $conn->query($order_status_counts_query);
+$order_status_counts = [];
+while ($row = $order_status_counts_result->fetch_assoc()) {
+    $order_status_counts[] = $row;
+}
+
+// Example for order trends, you may need to adjust the query
+$order_trends_query = "
+    SELECT DATE(order_date) AS date, COUNT(*) AS count 
+    FROM orders 
+    GROUP BY DATE(order_date)
+    ORDER BY DATE(order_date) DESC
+    LIMIT 30
+";
+$order_trends_result = $conn->query($order_trends_query);
+$order_trends = [];
+while ($row = $order_trends_result->fetch_assoc()) {
+    $order_trends[] = $row;
+}
+
+// Additional data visualizations (for example, top products and sales per day)
+$top_products_query = "
+    SELECT p.name, SUM(oi.quantity) AS total_quantity
+    FROM order_items oi
+    JOIN product p ON oi.product_id = p.product_id
+    GROUP BY p.name
+    ORDER BY total_quantity DESC
+    LIMIT 5
+";
+$top_products_result = $conn->query($top_products_query);
+$top_products = [];
+while ($row = $top_products_result->fetch_assoc()) {
+    $top_products[] = $row;
+}
+
+$sales_per_day_query = "
+    SELECT DATE(order_date) AS date, SUM(total_amount) AS total_sales
+    FROM orders
+    GROUP BY DATE(order_date)
+    ORDER BY DATE(order_date) DESC
+    LIMIT 30
+";
+$sales_per_day_result = $conn->query($sales_per_day_query);
+$sales_per_day = [];
+while ($row = $sales_per_day_result->fetch_assoc()) {
+    $sales_per_day[] = $row;
+}
+
+$conn->close();
 ?>
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <title>Au Maraicher Des Flandres</title>
+    <title>Tableau de Bord Administrateur</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="../images/logo2.png" type="image/icon type">
 
     <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Amatic+SC:400,700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="../css/open-iconic-bootstrap.min.css">
-    <link rel="stylesheet" href="../css/animate.css">
-
-    <link rel="stylesheet" href="../css/owl.carousel.min.css">
-    <link rel="stylesheet" href="../css/owl.theme.default.min.css">
-    <link rel="stylesheet" href="../css/magnific-popup.css">
-
-    <link rel="stylesheet" href="../css/aos.css">
-
-    <link rel="stylesheet" href="../css/ionicons.min.css">
-
-    <link rel="stylesheet" href="../css/bootstrap-datepicker.css">
-    <link rel="stylesheet" href="../css/jquery.timepicker.css">
-
-    <link rel="stylesheet" href="../css/flaticon.css">
-    <link rel="stylesheet" href="../css/icomoon.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .dashboard-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+        }
+        .chart-container {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .chart-container h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            color: #333;
+        }
+        .chart-container canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+        .metrics, .repartition, .additional {
+            flex: 1 1 24%;
+            min-width: 250px;
+        }
+        .metrics div, .repartition div, .additional div {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .metrics div h4, .repartition div h4, .additional div h4 {
+            font-size: 1.2em;
+            color: #555;
+        }
+        .metrics div p, .repartition div p, .additional div p {
+            font-size: 1.5em;
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-
 <?php include 'admin_navbar.php'; ?>
 
-<section id="home-section" class="hero">
-    <div class="home-slider owl-carousel">
-        <div class="slider-item" style="background-image: url(../images/amf3.jpg);">
-            <div class="overlay"></div>
-            <div class="container">
-                <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
-                    <div class="col-md-12 ftco-animate text-center">
-                        <h1 class="mb-2">On vous sert des Legumes &amp; Fruits Frais</h1>
-                        <h2 class="subheading mb-4">On vous livre vos Fruits &amp; Legumes</h2>
-                        <p><a href="#" class="btn btn-primary">Details</a></p>
-                    </div>
-                </div>
-            </div>
+<div class="container mt-4 dashboard-section">
+    <div class="chart-container">
+        <h3>Répartition des Commandes par Statut</h3>
+        <canvas id="statusChart"></canvas>
+    </div>
+    <div class="metrics">
+        <div>
+            <h4>Total des Commandes</h4>
+            <p><?php echo $orders_total_count; ?></p>
         </div>
-
-        <div class="slider-item" style="background-image: url(../images/amf1.jpg);">
-            <div class="overlay"></div>
-            <div class="container">
-                <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
-                    <div class="col-sm-12 ftco-animate text-center">
-                        <h1 class="mb-2">Aliments 100% Frais &amp; Organic</h1>
-                        <h2 class="subheading mb-4">On vous livre vos Fruits &amp; Legumes</h2>
-                        <p><a href="#" class="btn btn-primary">Details</a></p>
-                    </div>
-                </div>
-            </div>
+        <div>
+            <h4>Ventes Totales en Euros</h4>
+            <p>€<?php echo number_format($sales_total_amount, 2); ?></p>
+        </div>
+        <div>
+            <h4>Total des Produits</h4>
+            <p><?php echo $products_total_count; ?></p>
+        </div>
+        <!-- Add two more metrics here -->
+        <div>
+            <h4>Commandes Aujourd'hui</h4>
+            <p><?php echo $orders_today_count; ?></p>
+        </div>
+        
+    </div>
+    <div class="metrics">
+        <div>
+            <h4>Produits les Plus Vendus</h4>
+            <ul>
+                <?php foreach ($top_products as $product): ?>
+                    <li><?php echo htmlspecialchars($product['name']) . ': ' . $product['total_quantity'] . ' unités'; ?></li>
+                <?php endforeach; ?>
+            </ul>
         </div>
     </div>
-</section>
+    <div class="chart-container repartition">
+        <h3>Répartition des Produits par Catégorie</h3>
+        <canvas id="categoryChart"></canvas>
+    </div>
+    <div class="chart-container additional">
+        <h3>Évolution des Commandes</h3>
+        <canvas id="trendsChart"></canvas>
+    </div>
+    <!-- Additional visualizations -->
+    <div class="chart-container additional">
+        <h3>Ventes par Jour</h3>
+        <canvas id="salesPerDayChart"></canvas>
+    </div>
 
-<!-- Login Modal -->
-<?php include '../modals/login.php'; ?>
-<!-- Register Modal -->
-<?php include '../modals/register.php'; ?>
-<!-- Welcome Modal -->
-<?php include '../modals/admin_welcome.php'; ?>
-
-<div class="container mt-4">
-    <?php if (isset($_SESSION['errors'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php foreach ($_SESSION['errors'] as $error): ?>
-                <?php echo $error . "<br>"; ?>
-            <?php endforeach; ?>
-            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
-                Cliquez ici pour corriger les erreurs
-            </button>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['errors']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['registration_message'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo $_SESSION['registration_message']; ?>
-            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['registration_message']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['login_message'])): ?>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php echo $_SESSION['login_message']; ?>
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <?php unset($_SESSION['login_message']); ?>
-    <?php endif; ?>
 </div>
-
-<section class="ftco-section">
-    <div class="container">
-        <div class="row no-gutters ftco-services">
-            <div class="col-md-3 text-center d-flex align-self-stretch ftco-animate">
-                <div class="media block-6 services mb-md-0 mb-4">
-                    <div class="icon bg-color-1 active d-flex justify-content-center align-items-center mb-2">
-                        <span class="flaticon-shipped"></span>
-                    </div>
-                    <div class="media-body">
-                        <h3 class="heading">Livraison Gratuite</h3>
-                        <span>des 20€ D'achat</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 text-center d-flex align-self-stretch ftco-animate">
-                <div class="media block-6 services mb-md-0 mb-4">
-                    <div class="icon bg-color-2 d-flex justify-content-center align-items-center mb-2">
-                        <span class="flaticon-diet"></span>
-                    </div>
-                    <div class="media-body">
-                        <h3 class="heading">Toujours Frais</h3>
-                        <span>Produits bien emballé</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 text-center d-flex align-self-stretch ftco-animate">
-                <div class="media block-6 services mb-md-0 mb-4">
-                    <div class="icon bg-color-3 d-flex justify-content-center align-items-center mb-2">
-                        <span class="flaticon-award"></span>
-                    </div>
-                    <div class="media-body">
-                        <h3 class="heading">Qualité superieur</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 text-center d-flex align-self-stretch ftco-animate">
-                <div class="media block-6 services mb-md-0 mb-4">
-                    <div class="icon bg-color-4 d-flex justify-content-center align-items-center mb-2">
-                        <span class="flaticon-customer-service"></span>
-                    </div>
-                    <div class="media-body">
-                        <h3 class="heading">Support</h3>
-                        <span>24/7 Support</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="ftco-section ftco-category ftco-no-pt">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="row">
-                    <div class="col-md-6 order-md-last align-items-stretch d-flex">
-                        <div class="category-wrap-2 ftco-animate img align-self-stretch d-flex" style="background-image: url(../images/category.jpg);">
-                            <div class="text text-center">
-                                <h2>Légumes</h2>
-                                <p>Protégez la santé de chaque foyer</p>
-                                <p><a href="../shop.php" class="btn btn-primary">Achetez maintenant</a></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(../images/amf2.jpg);">
-                            <div class="text px-3 py-1">
-                                <h2 class="mb-0"><a href="../shop.php?category_id=2">Fruits</a></h2>
-                            </div>
-                        </div>
-                        <div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(../images/amf4.jpg);">
-                            <div class="text px-3 py-1">
-                                <h2 class="mb-0"><a href="../shop.php?category_id=1">Légumes</a></h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(../images/amf5.jpg);">
-                    <div class="text px-3 py-1">
-                        <h2 class="mb-0"><a href="../shop.php?category_id=3">Jus</a></h2>
-                    </div>
-                </div>
-                <div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(../images/category-4.jpg);">
-                    <div class="text px-3 py-1">
-                        <h2 class="mb-0"><a href="../shop.php?category_id=4">Fruits Sec</a></h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
 
 <?php include '../components/footer.php'; ?>
 
@@ -222,7 +219,6 @@ session_start();
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
 <script src="../js/jquery.min.js"></script>
 <script src="../js/jquery-migrate-3.0.1.min.js"></script>
 <script src="../js/popper.min.js"></script>
@@ -236,10 +232,193 @@ session_start();
 <script src="../js/jquery.animateNumber.min.js"></script>
 <script src="../js/bootstrap-datepicker.js"></script>
 <script src="../js/scrollax.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiUL
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiULgl1JY0H2s&sensor=false"></script>
 <script src="../js/google-map.js"></script>
 <script src="../js/main.js"></script>
 <script src="../js/modal-switch.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var ctxStatus = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'pie',
+            data: {
+                labels: <?php echo json_encode(array_column($order_status_counts, 'status')); ?>,
+                datasets: [{
+                    label: 'Commandes par Statut',
+                    data: <?php echo json_encode(array_column($order_status_counts, 'count')); ?>,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw + ' commandes';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        var ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctxCategory, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode(array_column($category_counts, 'category_name')); ?>,
+                datasets: [{
+                    label: 'Nombre de Produits par Catégorie',
+                    data: <?php echo json_encode(array_column($category_counts, 'count')); ?>,
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Nombre de Produits'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Catégorie'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw + ' produits';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        var ctxTrends = document.getElementById('trendsChart').getContext('2d');
+        new Chart(ctxTrends, {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode(array_column($order_trends, 'date')); ?>,
+                datasets: [{
+                    label: 'Commandes au Fil du Temps',
+                    data: <?php echo json_encode(array_column($order_trends, 'count')); ?>,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Nombre de Commandes'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw + ' commandes';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        var ctxSalesPerDay = document.getElementById('salesPerDayChart').getContext('2d');
+        new Chart(ctxSalesPerDay, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode(array_column($sales_per_day, 'date')); ?>,
+                datasets: [{
+                    label: 'Ventes par Jour',
+                    data: <?php echo json_encode(array_column($sales_per_day, 'total_sales')); ?>,
+                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Ventes en Euros'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': €' + tooltipItem.raw.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

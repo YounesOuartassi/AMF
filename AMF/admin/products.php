@@ -1,6 +1,12 @@
 <?php
 session_start();
 include '../db_connect.php'; // Database connection
+// Check if the user is logged in and is an admin
+if (!isset($_SESSION['loggedin']) || !$_SESSION['loggedin'] || !isset($_SESSION['is_admin']) || !$_SESSION['is_admin']) {
+    // Redirect to the home page or show an error message
+    header('Location: ../index.php'); // Adjust the path as necessary
+    exit();
+}
 
 // Handle adding a product
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_product'])) {
