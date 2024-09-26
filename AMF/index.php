@@ -42,7 +42,7 @@ include 'modals/modals_php.php';
     <link rel="stylesheet" href="css/flaticon.css">
     <link rel="stylesheet" href="css/icomoon.css">
     <link rel="stylesheet" href="css/style.css">
-	
+
   </head>	
   <body>
   <?php include 'components/navbar.php'; ?>
@@ -66,7 +66,7 @@ include 'modals/modals_php.php';
 	        </div>
 	      </div>
 
-	      <div class="slider-item" style="background-image: url(images/amf1.jpg);">
+	      <div class="slider-item" style="background-image: url(images/img5.jpg);">
 	      	<div class="overlay"></div>
 	        <div class="container">
 	          <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">
@@ -74,7 +74,6 @@ include 'modals/modals_php.php';
 	            <div class="col-sm-12 ftco-animate text-center">
 	              <h1 class="mb-2">Aliments 100% Frais &amp;  Organic</h1>
 	              <h2 class="subheading mb-4">On vous livre vos Fruits &amp; Legumes</h2>
-	              <p><a href="#" class="btn btn-primary">Details</a></p>
 	            </div>
 
 	          </div>
@@ -82,6 +81,7 @@ include 'modals/modals_php.php';
 	      </div>
 	    </div>
     </section>
+
 <!-- Login Modal -->
 <?php 
 include 'modals/login.php';
@@ -89,29 +89,45 @@ include 'modals/login_cart.php';
 include 'modals/register.php';
 include 'modals/welcome.php'; 
 ?>
-
+<!-- Display Errors and Success Messages -->
 <div class="container mt-4">
-    <?php if (isset($_SESSION['errors'])): ?>
+    <?php if (isset($_SESSION['errors_register'])): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php foreach ($_SESSION['errors'] as $error): ?>
+            <strong>Des erreurs ont été trouvées :</strong><br>
+            <?php foreach ($_SESSION['errors_register'] as $error): ?>
                 <?php echo $error . "<br>"; ?>
             <?php endforeach; ?>
-            <!-- Trigger the correct modal based on the error context -->
-            <button type="button" class="btn btn-link" data-toggle="modal" data-target=".<?php echo $show_modal_class; ?>">
-                Cliquez ici pour corriger les erreurs
+            <button type="button" class="btn btn-link" id="open-modal-btn" data-toggle="modal" data-target=".iden">
+                Cliquez ici pour corriger les erreurs d'inscription
             </button>
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
-        <?php unset($_SESSION['errors']); ?>
+        <?php unset($_SESSION['errors_register']); ?>
     <?php endif; ?>
 
-
+    <?php if (isset($_SESSION['errors_login'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Des erreurs ont été trouvées :</strong><br>
+            <?php foreach ($_SESSION['errors_login'] as $error): ?>
+                <?php echo $error . "<br>"; ?>
+            <?php endforeach; ?>
+            <button type="button" class="btn btn-link" id="open-modal-btn" data-toggle="modal" data-target=".conn">
+                Cliquez ici pour corriger les erreurs de connexion
+            </button>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <?php unset($_SESSION['errors_login']); ?>
+    <?php endif; ?>
     <?php if (isset($_SESSION['registration_message'])): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <?php echo $_SESSION['registration_message']; ?>
-        <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">Cliquez ici pour se connecter</button>
+        Inscription réussie ! Vous avez été identifié avec succès.
+        <button type="button" class="btn btn-link" data-toggle="modal" data-target=".conn">
+            Cliquez ici pour vous connecter
+        </button>
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -121,7 +137,7 @@ include 'modals/welcome.php';
 
 <?php if (isset($_SESSION['login_message'])): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <?php echo $_SESSION['login_message']; ?>
+        Connexion réussie !
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
@@ -129,7 +145,6 @@ include 'modals/welcome.php';
     <?php unset($_SESSION['login_message']); ?>
 <?php endif; ?>
 
-</div>
 
 </div>
     <section class="ftco-section">
@@ -228,7 +243,6 @@ include 'modals/welcome.php';
 			</div>
 		</section>
 
-    
   
     <?php include 'components/footer.php'; ?>
 

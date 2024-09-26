@@ -10,8 +10,13 @@
                 <li class="nav-item"><a href="shop.php" class="nav-link">Acheter</a></li>
                 <li class="nav-item"><a href="about.php" class="nav-link">À propos</a></li>
                 <li class="nav-item"><a href="contact.php" class="nav-link">Contact</a></li>
-                <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
+                <!-- <li class="nav-item cta cta-colored">
+                        <a href="cart.php" class="nav-link">
+                        <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
 
+                        </a>
+                </li> -->
+                <button type="button" class="icon-users btn" data-toggle="modal" data-target="<?php echo isset($_SESSION['loggedin']) && $_SESSION['loggedin'] ? '.welcome-modal' : '.conn'; ?>"></button>
                 <?php 
                 // Check if the user is logged in
                 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin']) : 

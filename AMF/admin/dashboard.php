@@ -50,7 +50,7 @@ while ($row = $order_status_counts_result->fetch_assoc()) {
     $order_status_counts[] = $row;
 }
 
-// Example for order trends, you may need to adjust the query
+// Order trends (last 30 days)
 $order_trends_query = "
     SELECT DATE(order_date) AS date, COUNT(*) AS count 
     FROM orders 
@@ -64,7 +64,7 @@ while ($row = $order_trends_result->fetch_assoc()) {
     $order_trends[] = $row;
 }
 
-// Additional data visualizations (for example, top products and sales per day)
+// Additional data visualizations
 $top_products_query = "
     SELECT p.name, SUM(oi.quantity) AS total_quantity
     FROM order_items oi
@@ -92,69 +92,90 @@ while ($row = $sales_per_day_result->fetch_assoc()) {
     $sales_per_day[] = $row;
 }
 
+// Customer Insights
+$customer_acquisition_query = "
+    SELECT DATE(created_at) AS date, COUNT(*) AS count
+    FROM users
+    GROUP BY DATE(created_at)
+    ORDER BY DATE(created_at) DESC
+    LIMIT 30
+";
+$customer_acquisition_result = $conn->query($customer_acquisition_query);
+$customer_acquisition = [];
+while ($row = $customer_acquisition_result->fetch_assoc()) {
+    $customer_acquisition[] = $row;
+}
+
+// Sales by Product
+$sales_by_product_query = "
+    SELECT p.name, SUM(oi.quantity * p.price_per_unit) AS total_sales
+    FROM order_items oi
+    JOIN product p ON oi.product_id = p.product_id
+    GROUP BY p.name
+    ORDER BY total_sales DESC
+    LIMIT 5
+";
+$sales_by_product_result = $conn->query($sales_by_product_query);
+$sales_by_product = [];
+while ($row = $sales_by_product_result->fetch_assoc()) {
+    $sales_by_product[] = $row;
+}
+
+// Average Order Processing Time (from order_date to current_date)
+$avg_processing_time_query = "
+    SELECT AVG(TIMESTAMPDIFF(DAY, order_date, NOW())) AS avg_processing_time
+    FROM orders
+";
+$avg_processing_time_result = $conn->query($avg_processing_time_query);
+$avg_processing_time = $avg_processing_time_result->fetch_assoc()['avg_processing_time'];
+
+// Order Fulfillment Rates
+$fulfillment_rate_query = "
+    SELECT 
+        SUM(CASE WHEN order_date IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*) * 100 AS fulfillment_rate
+    FROM orders
+";
+$fulfillment_rate_result = $conn->query($fulfillment_rate_query);
+$fulfillment_rate = $fulfillment_rate_result->fetch_assoc()['fulfillment_rate'];
+
 $conn->close();
 ?>
 
+
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-    <title>Tableau de Bord Administrateur</title>
+    <title>Au Maraicher Des Flandres-admin</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" href="../images/logo2.png" type="image/icon type">
 
     <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Amatic+SC:400,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/open-iconic-bootstrap.min.css">
+    <link rel="stylesheet" href="../css/animate.css">
+
+    <link rel="stylesheet" href="../css/owl.carousel.min.css">
+    <link rel="stylesheet" href="../css/owl.theme.default.min.css">
+    <link rel="stylesheet" href="../css/magnific-popup.css">
+
+    <link rel="stylesheet" href="../css/aos.css">
+
+    <link rel="stylesheet" href="../css/ionicons.min.css">
+
+    <link rel="stylesheet" href="../css/bootstrap-datepicker.css">
+    <link rel="stylesheet" href="../css/jquery.timepicker.css">
+
+    <link rel="stylesheet" href="../css/flaticon.css">
+    <link rel="stylesheet" href="../css/icomoon.css">
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
-        .dashboard-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 20px;
-        }
-        .chart-container {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-        .chart-container h3 {
-            margin-bottom: 15px;
-            font-size: 1.5em;
-            color: #333;
-        }
-        .chart-container canvas {
-            width: 100% !important;
-            height: auto !important;
-        }
-        .metrics, .repartition, .additional {
-            flex: 1 1 24%;
-            min-width: 250px;
-        }
-        .metrics div, .repartition div, .additional div {
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .metrics div h4, .repartition div h4, .additional div h4 {
-            font-size: 1.2em;
-            color: #555;
-        }
-        .metrics div p, .repartition div p, .additional div p {
-            font-size: 1.5em;
-            color: #333;
-        }
-    </style>
+
 </head>
 <body>
+
 <?php include 'admin_navbar.php'; ?>
 
 <div class="container mt-4 dashboard-section">
@@ -175,48 +196,49 @@ $conn->close();
             <h4>Total des Produits</h4>
             <p><?php echo $products_total_count; ?></p>
         </div>
-        <!-- Add two more metrics here -->
         <div>
             <h4>Commandes Aujourd'hui</h4>
             <p><?php echo $orders_today_count; ?></p>
         </div>
-        
     </div>
     <div class="metrics">
         <div>
-            <h4>Produits les Plus Vendus</h4>
+            <h4>Top 5 Produits les Plus Vendus</h4>
             <ul>
                 <?php foreach ($top_products as $product): ?>
-                    <li><?php echo htmlspecialchars($product['name']) . ': ' . $product['total_quantity'] . ' unités'; ?></li>
+                    <li><?php echo htmlspecialchars($product['name']); ?>: <?php echo $product['total_quantity']; ?> unités</li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <div>
+            <h4>Ventes Totales par Produit</h4>
+            <ul>
+                <?php foreach ($sales_by_product as $product): ?>
+                    <li><?php echo htmlspecialchars($product['name']); ?>: €<?php echo number_format($product['total_sales'], 2); ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
     </div>
-    <div class="chart-container repartition">
+    <div class="chart-container additional-visualizations">
         <h3>Répartition des Produits par Catégorie</h3>
         <canvas id="categoryChart"></canvas>
     </div>
-    <div class="chart-container additional">
-        <h3>Évolution des Commandes</h3>
-        <canvas id="trendsChart"></canvas>
+    <div class="chart-container additional-visualizations">
+        <h3>Trends des Commandes (30 Derniers Jours)</h3>
+        <canvas id="orderTrendsChart"></canvas>
     </div>
-    <!-- Additional visualizations -->
-    <div class="chart-container additional">
-        <h3>Ventes par Jour</h3>
+    <div class="chart-container additional-visualizations">
+        <h3>Ventes par Jour (30 Derniers Jours)</h3>
         <canvas id="salesPerDayChart"></canvas>
     </div>
-
+    <div class="chart-container additional-visualizations">
+        <h3>Acquisition de Clients (30 Derniers Jours)</h3>
+        <canvas id="customerAcquisitionChart"></canvas>
+    </div>
 </div>
+<!-- Welcome Modal -->
+<?php include '../modals/admin_welcome.php'; ?>
 
-<?php include '../components/footer.php'; ?>
-
-<!-- loader -->
-<div id="ftco-loader" class="show fullscreen">
-    <svg class="circular" width="48px" height="48px">
-        <circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/>
-        <circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/>
-    </svg>
-</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script src="../js/jquery.min.js"></script>
@@ -232,193 +254,191 @@ $conn->close();
 <script src="../js/jquery.animateNumber.min.js"></script>
 <script src="../js/bootstrap-datepicker.js"></script>
 <script src="../js/scrollax.min.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiUL
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBVWaKrjvy3MaE7SQ74_uJiULgl1JY0H2s&sensor=false"></script>
 <script src="../js/google-map.js"></script>
 <script src="../js/main.js"></script>
 <script src="../js/modal-switch.js"></script>
 
+</body>
+</html>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var ctxStatus = document.getElementById('statusChart').getContext('2d');
-        new Chart(ctxStatus, {
-            type: 'pie',
-            data: {
-                labels: <?php echo json_encode(array_column($order_status_counts, 'status')); ?>,
-                datasets: [{
-                    label: 'Commandes par Statut',
-                    data: <?php echo json_encode(array_column($order_status_counts, 'count')); ?>,
-                    backgroundColor: [
-                        'rgba(255, 99, 132, 0.2)',
-                        'rgba(54, 162, 235, 0.2)',
-                        'rgba(255, 206, 86, 0.2)',
-                        'rgba(75, 192, 192, 0.2)'
-                    ],
-                    borderColor: [
-                        'rgba(255, 99, 132, 1)',
-                        'rgba(54, 162, 235, 1)',
-                        'rgba(255, 206, 86, 1)',
-                        'rgba(75, 192, 192, 1)'
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            boxWidth: 10
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.label + ': ' + tooltipItem.raw + ' commandes';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        var ctxCategory = document.getElementById('categoryChart').getContext('2d');
-        new Chart(ctxCategory, {
-            type: 'bar',
-            data: {
-                labels: <?php echo json_encode(array_column($category_counts, 'category_name')); ?>,
-                datasets: [{
-                    label: 'Nombre de Produits par Catégorie',
-                    data: <?php echo json_encode(array_column($category_counts, 'count')); ?>,
-                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Nombre de Produits'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Catégorie'
-                        }
-                    }
+    // Pie chart for order status
+    const statusChartCtx = document.getElementById('statusChart').getContext('2d');
+    const statusChart = new Chart(statusChartCtx, {
+        type: 'pie',
+        data: {
+            labels: <?php echo json_encode(array_column($order_status_counts, 'status')); ?>,
+            datasets: [{
+                data: <?php echo json_encode(array_column($order_status_counts, 'count')); ?>,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
                 },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.label + ': ' + tooltipItem.raw + ' produits';
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (context.parsed !== null) {
+                                label += ': ' + context.parsed.toLocaleString();
                             }
+                            return label;
                         }
                     }
                 }
             }
-        });
+        }
+    });
 
-        var ctxTrends = document.getElementById('trendsChart').getContext('2d');
-        new Chart(ctxTrends, {
-            type: 'line',
-            data: {
-                labels: <?php echo json_encode(array_column($order_trends, 'date')); ?>,
-                datasets: [{
-                    label: 'Commandes au Fil du Temps',
-                    data: <?php echo json_encode(array_column($order_trends, 'count')); ?>,
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Nombre de Commandes'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    }
+    // Bar chart for product categories
+    const categoryChartCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryChartCtx, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode(array_column($category_counts, 'category_name')); ?>,
+            datasets: [{
+                label: 'Produits par Catégorie',
+                data: <?php echo json_encode(array_column($category_counts, 'count')); ?>,
+                backgroundColor: '#FF6384',
+                borderColor: '#FF6384',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
                 },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.label + ': ' + tooltipItem.raw + ' commandes';
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (context.parsed !== null) {
+                                label += ': ' + context.parsed.toLocaleString();
                             }
+                            return label;
                         }
                     }
                 }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
             }
-        });
+        }
+    });
 
-        var ctxSalesPerDay = document.getElementById('salesPerDayChart').getContext('2d');
-        new Chart(ctxSalesPerDay, {
-            type: 'bar',
-            data: {
-                labels: <?php echo json_encode(array_column($sales_per_day, 'date')); ?>,
-                datasets: [{
-                    label: 'Ventes par Jour',
-                    data: <?php echo json_encode(array_column($sales_per_day, 'total_sales')); ?>,
-                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Ventes en Euros'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    }
+    // Line chart for order trends
+    const orderTrendsChartCtx = document.getElementById('orderTrendsChart').getContext('2d');
+    const orderTrendsChart = new Chart(orderTrendsChartCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode(array_column($order_trends, 'date')); ?>,
+            datasets: [{
+                label: 'Commandes',
+                data: <?php echo json_encode(array_column($order_trends, 'count')); ?>,
+                borderColor: '#FF6384',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
                 },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.label + ': €' + tooltipItem.raw.toFixed(2);
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (context.parsed !== null) {
+                                label += ': ' + context.parsed.toLocaleString();
                             }
+                            return label;
                         }
                     }
                 }
             }
-        });
+        }
+    });
+
+    // Line chart for sales per day
+    const salesPerDayChartCtx = document.getElementById('salesPerDayChart').getContext('2d');
+    const salesPerDayChart = new Chart(salesPerDayChartCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode(array_column($sales_per_day, 'date')); ?>,
+            datasets: [{
+                label: 'Ventes Totales',
+                data: <?php echo json_encode(array_column($sales_per_day, 'total_sales')); ?>,
+                borderColor: '#36A2EB',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (context.parsed !== null) {
+                                label += ': €' + context.parsed.toLocaleString();
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Line chart for customer acquisition
+    const customerAcquisitionChartCtx = document.getElementById('customerAcquisitionChart').getContext('2d');
+    const customerAcquisitionChart = new Chart(customerAcquisitionChartCtx, {
+        type: 'line',
+        data: {
+            labels: <?php echo json_encode(array_column($customer_acquisition, 'date')); ?>,
+            datasets: [{
+                label: 'Acquisition de Clients',
+                data: <?php echo json_encode(array_column($customer_acquisition, 'count')); ?>,
+                borderColor: '#FFCE56',
+                backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (context.parsed !== null) {
+                                label += ': ' + context.parsed.toLocaleString();
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
     });
 </script>
-
 </body>
 </html>

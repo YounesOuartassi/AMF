@@ -33,11 +33,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'update' && isset($_GET['id'])
     exit;
 }
 
-// Fetch all orders with status 'ordered'
+// Fetch all orders with status 'ordered' and display the newest orders first
 $sql = "SELECT o.order_id, o.order_date, o.total_amount, u.first_name, u.last_name, u.email, u.phone, u.address, u.postal_code, u.city 
         FROM orders o
         JOIN users u ON o.user_id = u.user_id
-        WHERE o.status = 'ordered'";
+        WHERE o.status = 'ordered'
+        ORDER BY o.order_date DESC"; // Order by order_date in descending order to show the newest orders first
 $result = $conn->query($sql);
 
 $orders = [];
@@ -171,14 +172,10 @@ if ($result->num_rows > 0) {
     <?php endif; ?>
 </div>
 
-<!-- Login Modal -->
-<?php include '../modals/login.php'; ?>
-<!-- Register Modal -->
-<?php include '../modals/register.php'; ?>
+
 <!-- Welcome Modal -->
 <?php include '../modals/admin_welcome.php'; ?>
 
-<?php include '../components/footer.php'; ?>
 
 <!-- loader -->
 <div id="ftco-loader" class="show fullscreen">

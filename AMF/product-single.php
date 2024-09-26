@@ -195,12 +195,18 @@ include 'modals/welcome.php';
                         <div class="input-group col-md-6 d-flex mb-3">
                             <input type="number" id="quantity" name="quantity" class="form-control input-number" min="1" placeholder="Entrer la quantité" required>
                         </div>
-
-                        <div class="input-group col-md-6 d-flex mb-3">
+                         <!-- the clients selects the unit                -->
+                        <!-- <div class="input-group col-md-6 d-flex mb-3">
                             <select id="unit" name="unit" class="form-control" required>
                                 <option value="kilogram" <?= $product['unit'] == 'kilogram' ? 'selected' : ''; ?>>Kilogram</option>
                                 <option value="pièce" <?= $product['unit'] == 'pièce' ? 'selected' : ''; ?>>Unité</option>
                             </select>
+                        </div> -->
+
+                        <!-- the cliendoesnt select the unit -->
+                        <div class="input-group col-md-6 d-flex mb-3 align-items-center">
+                            <label class="mr-2">Unité:</label>
+                            <input type="text" class="form-control" value="<?= htmlspecialchars($product['unit']); ?>" readonly>
                         </div>
                     </div>
 
