@@ -3969,7 +3969,7 @@ class PHPMailer
             }
         }
 
-       
+
 
         return false;
     }
