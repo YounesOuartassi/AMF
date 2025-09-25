@@ -101,8 +101,8 @@ if (array_key_exists('provider', $_POST)) {
 }
 
 //If you don't want to use the built-in form, set your client id and secret here
-//$clientId = 'RANDOMCHARS-----duv1n2.apps.googleusercontent.com';
-//$clientSecret = 'RANDOMCHARS-----lGyjPcRtvP';
+//$clientId = getenv('OAUTH_CLIENT_ID') ?: '';
+//$clientSecret = getenv('OAUTH_CLIENT_SECRET') ?: '';
 
 //If this automatic URL doesn't work, set it yourself manually to the URL of this script
 $redirectUri = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];

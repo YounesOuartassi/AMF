@@ -279,7 +279,7 @@ class PHPMailer
      *
      * @var string
      */
-    public $Host = 'localhost';
+    public $Host = '';
 
     /**
      * The default SMTP server port.
@@ -836,6 +836,12 @@ class PHPMailer
         }
         //Pick an appropriate debug output format automatically
         $this->Debugoutput = (strpos(PHP_SAPI, 'cli') !== false ? 'echo' : 'html');
+
+        // Load SMTP credentials from environment variables if available
+        $this->Host = getenv('SMTP_HOST') ?: $this->Host;
+        $this->Username = getenv('SMTP_USERNAME') ?: $this->Username;
+        $this->Password = getenv('SMTP_PASSWORD') ?: $this->Password;
+        $this->Port = getenv('SMTP_PORT') ?: $this->Port;
     }
 
     /**
@@ -3962,6 +3968,8 @@ class PHPMailer
                 return true;
             }
         }
+
+       
 
         return false;
     }
